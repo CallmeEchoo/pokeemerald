@@ -12434,3 +12434,13 @@ static const struct TrainerMonNoItemDefaultMoves sParty_MayLinkPlaceholder[] = {
     .species = SPECIES_KYOGRE,
     }
 };
+
+static const struct TrainerMonItemCustomMoves sParty_TestTrainer[] = {
+    {
+    .iv = 0,
+    .lvl = 40,
+    .species = SPECIES_ZIGZAGOON,
+    .heldItem = ITEM_ORAN_BERRY,
+    .moves = {MOVE_HEADBUTT, MOVE_HEADBUTT, MOVE_HEADBUTT, MOVE_HEADBUTT}
+    }
+};

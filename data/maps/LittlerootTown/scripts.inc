@@ -909,6 +909,11 @@ LittlerootTown_EventScript_GiveRunningShoes::
 	delay 30
 	return
 
+LittlerootTown_EventScript_TestTrainer::
+	trainerbattle_single TRAINER_TESTTRAINER, LittlerootTown_Text_TestTrainer_Intro, LittlerootTown_Text_TestTrainer_Defeat
+	msgbox LittlerootTown_Text_TestTrainer_PostBattle, MSGBOX_AUTOCLOSE
+	end
+
 LittlerootTown_Text_OurNewHomeLetsGoInside:
 	.string "MOM: {PLAYER}, we're here, honey!\p"
 	.string "It must be tiring riding with our things\n"
@@ -1019,3 +1024,11 @@ LittlerootTown_Text_BirchSomethingToShowYouAtLab:
 	.string "I have something to show you.\n"
 	.string "Let's go to my LAB.$"
 
+LittlerootTown_Text_TestTrainer_Intro:
+	.string "...$"
+
+LittlerootTown_Text_TestTrainer_Defeat:
+	.string "...$"
+
+LittlerootTown_Text_TestTrainer_PostBattle:
+	.string "...$"
