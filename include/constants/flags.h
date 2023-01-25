@@ -41,10 +41,10 @@
 #define FLAG_TEMP_1F     (TEMP_FLAGS_START + 0x1F)
 #define TEMP_FLAGS_END   FLAG_TEMP_1F
 
-#define FLAG_ENTERED_ROUTE111_GAUNTLET    0x20 // entered the r111 gauntlet
+#define FLAG_ENTERED_ROUTE_111_GAUNTLET    0x20 // entered the r111 gauntlet
 #define FLAG_HIDE_ROUTE_111_LEAF    0x21 // hide leaf on r111 after visiting fallarbor town
-#define FLAG_UNUSED_0x022    0x22 // Unused Flag
-#define FLAG_UNUSED_0x023    0x23 // Unused Flag
+#define FLAG_HIDE_ROUTE_118_LEAF    0x22 // hide leaf on r118 after visiting fortree city
+#define FLAG_ENTERED_ROUTE_118_GAUNTLET   0x23 // entered the r118 gauntlet
 #define FLAG_UNUSED_0x024    0x24 // Unused Flag
 #define FLAG_UNUSED_0x025    0x25 // Unused Flag
 #define FLAG_UNUSED_0x026    0x26 // Unused Flag

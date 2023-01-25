@@ -244,6 +244,53 @@ Route118_EventScript_Deandre::
 	msgbox Route118_Text_DeandrePostBattle, MSGBOX_AUTOCLOSE
 	end
 
+Route118_EventScript_Leaf_Gauntlet::
+	lock
+	faceplayer
+	goto_if_set FLAG_ENTERED_ROUTE_118_GAUNTLET, Route118_EventScript_Leaf_GauntletBlock
+	goto_if_set FLAG_BADGE05_GET, Route118_EventScript_Leaf_GauntletOpen
+	goto Route118_EventScript_Leaf_GauntletClosed
+	release
+	end
+
+
+Route118_EventScript_Leaf_GauntletOpen::
+	msgbox Route118_Text_Leaf_GauntletOpen MSGBOX_YESNO
+	compare VAR_RESULT, 0
+	goto_if_eq Route118_EventScript_Leaf_GauntletOpenNo
+	goto Route118_EventScript_Leaf_GauntletOpenYes
+	release
+	end
+
+Route118_EventScript_Leaf_GauntletOpenYes::
+	msgbox Route118_Text_Leaf_GauntletOpenYes MSGBOX_DEFAULT
+	applymovement 47, Route118_Movement_Leaf_GauntletOpenYes_Up
+	waitmovement 0
+	applymovement OBJ_EVENT_ID_PLAYER, Route118_Movement_Leaf_GauntletOpenYes_Player
+	waitmovement 0
+	applymovement 47, Route118_Movement_Leaf_GauntletOpenYes_Down
+	waitmovement 0
+	setflag FLAG_ENTERED_ROUTE_118_GAUNTLET
+	release
+	end
+
+Route118_EventScript_Leaf_GauntletOpenNo::
+	msgbox Route118_Text_Leaf_GauntletOpenNo
+	release
+	end
+
+Route118_EventScript_Leaf_GauntletBlock::
+	msgbox Route118_Text_Leaf_GauntletBlock MSGBOX_DEFAULT
+	release
+	end
+
+Route118_EventScript_Leaf_GauntletClosed::
+	msgbox Route118_Text_Leaf_GauntletClosed, MSGBOX_DEFAULT
+	release
+	end
+
+
+
 Route118_Text_StevenQuestions:
 	.string "STEVEN: Hi, {PLAYER}{KUN}!\p"
 	.string "It's me, STEVEN!\n"
@@ -299,3 +346,49 @@ Route118_Text_RouteSign119:
 	.string "ROUTE 118\n"
 	.string "{UP_ARROW} ROUTE 119$"
 
+Route118_Text_Leaf_GauntletClosed:
+	.string "Hey trainer, good to see you.\n"
+	.string "I have another challenge for you.\l"
+	.string "From here to Fortree City.\p"
+	.string "But it looks like you dont have\l"
+	.string "your fathers Badge yet.\p"
+	.string "Come back when you got the 5th \l"
+	.string "Then I will let you enter. Good Luck!$"
+
+Route118_Text_Leaf_GauntletOpen:
+	.string "Wow you got Normans badge!\n"
+	.string "You are definitely ready.\l"
+	.string "There will be many challenges\p"
+	.string "ahead. So stay sharp!\l"
+	.string "As you know I wont let you out\l"
+	.string "once you enter this gauntlet.\p"
+	.string "So, do you want to enter this gauntlet?$"
+
+Route118_Text_Leaf_GauntletOpenNo:
+	.string "Let me know when you are ready!$"
+
+Route118_Text_Leaf_GauntletOpenYes:
+	.string "This is going to be awesome!\n"
+	.string "I cant wait to fight you one day.$"
+
+Route118_Text_Leaf_GauntletBlock:
+	.string "Good luck with the challenge.\n"
+	.string "There are some surprises I prepared.$"
+
+Route118_Movement_Leaf_GauntletOpenYes_Up:
+	walk_up
+	walk_left
+	face_right
+	step_end
+
+Route118_Movement_Leaf_GauntletOpenYes_Down:
+	walk_right
+	walk_down
+	face_up
+	step_end
+	
+Route118_Movement_Leaf_GauntletOpenYes_Player:
+	walk_up
+	walk_up
+	walk_up
+	step_end

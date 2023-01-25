@@ -87,6 +87,11 @@ FortreeCity_Movement_KecleonFlee:
 	walk_right
 	step_end
 
+FortreeCity_EventScript_GauntletFinished::
+	msgbox FortreeCity_Text_GauntletFinished MSGBOX_NPC
+	setflag FLAG_HIDE_ROUTE_118_LEAF
+	end
+
 FortreeCity_Text_SawGiganticPokemonInSky:
 	.string "No one believes me, but I saw this\n"
 	.string "gigantic POKéMON in the sky.\p"
@@ -154,3 +159,6 @@ FortreeCity_Text_GymSign:
 	.string "“The bird user taking flight into\n"
 	.string "the world.”$"
 
+FortreeCity_Text_GauntletFinished:
+	.string "Well done Trainer!\n"
+	.string "Leaf already knows you made it.$"

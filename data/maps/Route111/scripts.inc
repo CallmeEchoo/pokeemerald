@@ -576,7 +576,7 @@ Route111_EventScript_TrainerHillSign::
 Route111_EventScript_Leaf_Gauntlet::
 	lock
 	faceplayer
-	goto_if_set FLAG_ENTERED_ROUTE111_GAUNTLET, Route111_EventScript_Leaf_GauntletBlock
+	goto_if_set FLAG_ENTERED_ROUTE_111_GAUNTLET, Route111_EventScript_Leaf_GauntletBlock
 	goto_if_set FLAG_BADGE03_GET, Route111_EventScript_Leaf_GauntletOpen
 	goto Route111_EventScript_Leaf_GauntletClosed
 	release
@@ -599,7 +599,7 @@ Route111_EventScript_Leaf_GauntletOpenYes::
 	waitmovement 0
 	applymovement 47, Route111_Movement_Leaf_GauntletOpenYes_Down
 	waitmovement 0
-	setflag FLAG_ENTERED_ROUTE111_GAUNTLET
+	setflag FLAG_ENTERED_ROUTE_111_GAUNTLET
 	release
 	end
 
