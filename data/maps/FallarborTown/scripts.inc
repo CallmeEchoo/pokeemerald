@@ -51,6 +51,11 @@ FallarborTown_EventScript_MoveTutorSign::
 	msgbox FallarborTown_Text_MoveTutorSign, MSGBOX_SIGN
 	end
 
+FallarborTown_EventScript_GauntletFinished::
+	msgbox FallarborTown_Text_GauntletFinished MSGBOX_NPC
+	setflag FLAG_HIDE_ROUTE_111_LEAF
+	end
+
 FallarborTown_Text_ShadyCharactersCozmosHome:
 	.string "Something's happening,\n"
 	.string "and I don't like it!\p"
@@ -93,3 +98,6 @@ FallarborTown_Text_MoveTutorSign:
 	.string "MOVE TUTOR'S HOUSE\n"
 	.string "“New moves taught to POKéMON.”$"
 
+FallarborTown_Text_GauntletFinished:
+	.string "Well done trainer!\n"
+	.string "I will let Leaf know you made it!$"

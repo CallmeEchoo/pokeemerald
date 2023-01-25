@@ -573,6 +573,53 @@ Route111_EventScript_TrainerHillSign::
 	msgbox Route111_Text_TrainerHillSign, MSGBOX_SIGN
 	end
 
+Route111_EventScript_Leaf_Gauntlet::
+	lock
+	faceplayer
+	goto_if_set FLAG_ENTERED_ROUTE111_GAUNTLET, Route111_EventScript_Leaf_GauntletBlock
+	goto_if_set FLAG_BADGE03_GET, Route111_EventScript_Leaf_GauntletOpen
+	goto Route111_EventScript_Leaf_GauntletClosed
+	release
+	end
+
+
+Route111_EventScript_Leaf_GauntletOpen::
+	msgbox Route111_Text_Leaf_GauntletOpen MSGBOX_YESNO
+	compare VAR_RESULT, 0
+	goto_if_eq Route111_EventScript_Leaf_GauntletOpenNo
+	goto Route111_EventScript_Leaf_GauntletOpenYes
+	release
+	end
+
+Route111_EventScript_Leaf_GauntletOpenYes::
+	msgbox Route111_Text_Leaf_GauntletOpenYes MSGBOX_DEFAULT
+	applymovement 47, Route111_Movement_Leaf_GauntletOpenYes_Up
+	waitmovement 0
+	applymovement OBJ_EVENT_ID_PLAYER, Route111_Movement_Leaf_GauntletOpenYes_Player
+	waitmovement 0
+	applymovement 47, Route111_Movement_Leaf_GauntletOpenYes_Down
+	waitmovement 0
+	setflag FLAG_ENTERED_ROUTE111_GAUNTLET
+	release
+	end
+
+Route111_EventScript_Leaf_GauntletOpenNo::
+	msgbox Route111_Text_Leaf_GauntletOpenNo
+	release
+	end
+
+Route111_EventScript_Leaf_GauntletBlock::
+	msgbox Route111_Text_Leaf_GauntletBlock MSGBOX_DEFAULT
+	release
+	end
+
+Route111_EventScript_Leaf_GauntletClosed::
+	msgbox Route111_Text_Leaf_GauntletClosed, MSGBOX_DEFAULT
+	release
+	end
+	
+
+
 Route111_Text_BattleOurFamily:
 	.string "Hello! I take it you're a traveler.\p"
 	.string "How's this? What do you say to taking\n"
@@ -727,3 +774,50 @@ Route111_Text_TrainerHillSign:
 	.string "“Scale the heights, you hot-blooded\n"
 	.string "TRAINERS!”$"
 
+Route111_Text_Leaf_GauntletClosed:
+	.string "Hey trainer, my name is Leaf.\n"
+	.string "The route ahead is very difficult!\l"
+	.string "You will have to make it all the way to\p"
+	.string "Fallarbor Town in one go.\l"
+	.string "I dont think you are ready for that yet.\p"
+	.string "Come back when you have defeated Wattson.\l"
+	.string "Then I will let you enter. Good Luck!$"
+
+Route111_Text_Leaf_GauntletOpen:
+	.string "Looks like you were able to defeat Wattson.\n"
+	.string "I am sure you will be able to make it to\l"
+	.string "Fallarbor Town now!\p"
+	.string "How about we make it a little more difficult?\l"
+	.string "Once you enter I wont let you out until you\l"
+	.string "have reached Fallarbor Town. A true Challenge!\p"
+	.string "So, do you want to enter this gauntlet?$"
+
+Route111_Text_Leaf_GauntletOpenNo:
+	.string "Dont worry! come back when you feel ready$"
+
+Route111_Text_Leaf_GauntletOpenYes:
+	.string "I knew you would not back down from a\n"
+	.string "challenge! Good luck.$"
+
+Route111_Text_Leaf_GauntletBlock:
+	.string "No backing down now!\n"
+	.string "Make it all the way to Fallarbor Town\l"
+	.string "and you can come back to Mauville City.$"
+
+Route111_Movement_Leaf_GauntletOpenYes_Up:
+	walk_up
+	walk_left
+	face_right
+	step_end
+
+Route111_Movement_Leaf_GauntletOpenYes_Down:
+	walk_right
+	walk_down
+	face_up
+	step_end
+	
+Route111_Movement_Leaf_GauntletOpenYes_Player:
+	walk_up
+	walk_up
+	walk_up
+	step_end
