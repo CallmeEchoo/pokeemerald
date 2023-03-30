@@ -298,7 +298,7 @@ static u8 ChooseWildMonLevel(const struct WildPokemon *wildPokemon)
     return min + rand;
 }
 
-static u16 GetCurrentMapWildMonHeaderId(void)
+u16 GetCurrentMapWildMonHeaderId(void)
 {
     u16 i;
 
