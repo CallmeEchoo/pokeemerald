@@ -94,7 +94,7 @@ enum Windows
     //EV_LABEL_WINDOW_BOX_OVERVIEW,
     EV_LABEL_WINDOW_BOX_LEVEL,
     EV_LABEL_WINDOW_BOX_CATCHRATE,
-    //EV_LABEL_WINDOW_BOX_STATS,
+    EV_LABEL_WINDOW_BOX_STATS,
     //EV_LABEL_WINDOW_BOX_STATS_ROW,
     //EV_LABEL_WINDOW_BOX_ABILITIES,
 
@@ -142,9 +142,11 @@ static void ClearPageWindowTilemap(u8 page);
 static void PutPageWindowText(u8 page);
 static void PutPageMonDataText(u8 page);
 static void PutPageWindowIcons(u8 page);
+static void PutPageWindowSprites(u8 page);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void DrawMonIcon(u16 species, u8 x, u8 y);
+static u8 DrawMonSprite(u16 species, u8 x, u8 y);
 static u8 GetMaxMonIndex(u8 page);
 static u16 SpeciesByIndex(u8 selection);
 static u8 *LevelRangeByIndex(u8 selection);
@@ -192,7 +194,46 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .paletteNum = 15,
         .baseBlock = 1 + 8,
     },
+    [EV_LABEL_WINDOW_BOX_STATS] = 
+    {
+        .bg = 0,
+        .tilemapLeft = 14,
+        .tilemapTop = 12,
+        .width = 2,
+        .height = 7,
+        .paletteNum = 15,
+        .baseBlock = 1 + 8 + 12,
+    },
 }; 
+
+static const struct OamData sOamData_FrontPic = 
+{
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_OFF,
+    .objMode = ST_OAM_OBJ_NORMAL,
+    .mosaic = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(64x64),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(64x64),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+#define TAG_FRONT_PIC 20000
+static const struct SpriteTemplate sSpriteTemplate_FrontPic = 
+{
+    .tileTag = TAG_NONE,
+    .paletteTag = TAG_NONE,
+    .oam = &sOamData_FrontPic,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
 
 static const u32 sMenuTiles[] = INCBIN_U32("graphics/ui_menu/tiles.4bpp.lz");
 static const u32 sMenuTilemap[] = INCBIN_U32("graphics/ui_menu/tilemap.bin.lz");
@@ -332,12 +373,16 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 8:
+        PutPageWindowSprites(sMenuDataPtr->currPageIndex);
+        gMain.state++;
+        break;
+    case 9:
         PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
         taskId = CreateTask(Task_MenuWaitFadeIn, 0);
         BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
         gMain.state++;
         break;
-    case 9:
+    case 10:
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gMain.state++;
         break;
@@ -442,7 +487,6 @@ static void Menu_InitWindows(void)
     //ScheduleBgCopyTilemapToVram(2);
 }
 
-
 static const u8 sText_Level[] = _("LVL:");
 static const u8 sText_CatchRate[] = _("CatchRate:");
 static const u8 sText_Abilities[] = _("Abilities");
@@ -454,6 +498,13 @@ static const u8 sText_Land[] = _("Land");
 static const u8 sText_WaterRock[] = _("Water\nRock");
 static const u8 sText_Fish[] = _("Fishing");
 
+static const u8 sText_HP[]   = _("HP");
+static const u8 sText_ATK[]  = _("ATK");
+static const u8 sText_DEF[]  = _("DEF");
+static const u8 sText_SATK[] = _("SAT");
+static const u8 sText_SDEF[] = _("SDF");
+static const u8 sText_SPD[]  = _("SPD");
+
 
 static void PutPageWindowText(u8 page)
 {
@@ -462,6 +513,12 @@ static void PutPageWindowText(u8 page)
         case EV_PAGE_LAND:
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_WHITE);
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_CATCHRATE, sText_CatchRate, 0, 0, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 0, 0, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 0, 9, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 0, 18, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 0, 27, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 0, 36, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 0, 45, 0, FONT_WHITE);
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -519,6 +576,25 @@ static void PutPageWindowIcons(u8 page)
             for (i = 0; i < sMenuDataPtr->maxMonIndex; i++)
                 DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y);
                 break;
+        case EV_PAGE_FISHING:
+            //stub
+            break;
+        case EV_PAGE_WATER_ROCK:
+            //stub
+            break;
+    }
+}
+
+static void PutPageWindowSprites(u8 page)
+{
+    u8 spriteId;
+    u8 selection = sMenuDataPtr->currMonIndex;
+    u16 species = SpeciesByIndex(selection);
+    switch(page)
+    {
+        case EV_PAGE_LAND:
+            spriteId = DrawMonSprite(species, 138, 57);
+            break;
         case EV_PAGE_FISHING:
             //stub
             break;
@@ -599,11 +675,34 @@ static void Task_MenuMain(u8 taskId)
     }
 }
 
+const static struct CompressedSpritePalette *GetMonSpritePal(u16 species)
+{
+    return &gMonPaletteTable[species];
+}
+
+const static struct CompressedSpriteSheet *GetMonSpriteSheet(u16 species)
+{
+    return &gMonFrontPicTable[species];
+}
+
 static void DrawMonIcon(u16 species, u8 x, u8 y)
 {
-
     LoadMonIconPalette(species);
     CreateMonIconNoPersonality(species, SpriteCallbackDummy, x, y, 1, 0);
+}
+
+static u8 DrawMonSprite(u16 species, u8 x, u8 y)
+{
+    u8 spriteId;
+    const struct CompressedSpritePalette *pal = GetMonSpritePal(species);
+    const struct CompressedSpriteSheet *sheet = GetMonSpriteSheet(species);
+    struct SpriteTemplate spriteTemplate = sSpriteTemplate_FrontPic;
+    LoadCompressedSpritePalette(pal);
+    LoadCompressedSpriteSheet(sheet);
+    spriteTemplate.paletteTag = pal->tag;
+    spriteTemplate.tileTag = sheet->tag;
+    spriteId = CreateSprite(&spriteTemplate, x, y, 0);
+    return spriteId;
 }
 
 static u8 GetMaxMonIndex(u8 page)
