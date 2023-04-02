@@ -1,6 +1,7 @@
 #include "global.h"
 #include "ui_menu.h"
 #include "strings.h"
+#include "battle.h"
 #include "bg.h"
 #include "data.h"
 #include "decompress.h"
@@ -39,9 +40,9 @@
 
 #include "pokemon_icon.h"
 #include "wild_encounter.h"
-#include "data/wild_encounters.h"
 #include "constants/wild_encounter.h"
-#include "data/text/abilities.h"
+//#include "data/text/abilities.h"
+//#include "data/wild_encounters.h"
 
 /*
  * 
@@ -54,7 +55,6 @@ struct MenuResources
     u8 gfxLoadState;
 
     u16 headerId;
-
     u8 currPageIndex;
     u8 minPageIndex;
     u8 maxPageIndex;
@@ -80,32 +80,35 @@ enum SubMenu
     EV_SUBMENU_LEVEL_3,
 };
 
-enum Labels
+enum Windows
 {
-    EV_LABEL_WINDOW_LAND_TITLE,
-    EV_LABEL_WINDOW_FISHING_TITLE,
-    EV_LABEL_WINDOW_WATER_ROCK_TITLE,
+    //EV_LABEL_WINDOW_LAND_TITLE,
+    //EV_LABEL_WINDOW_FISHING_TITLE,
+    //EV_LABEL_WINDOW_WATER_ROCK_TITLE,
 
     // Direction Prompts
-    EV_LABEL_WINDOW_PROMPT_DETAILS,
-    EV_LABEL_WINDOW_PROMPT_CANCEL,
+    //EV_LABEL_WINDOW_PROMPT_DETAILS,
+    //EV_LABEL_WINDOW_PROMPT_CANCEL,
 
-    //  Box
-    EV_LABEL_WINDOW_BOX_OVERVIEW,
-    EV_LABEL_WINDOW_BOX_DETAILS,
+    // Box
+    //EV_LABEL_WINDOW_BOX_OVERVIEW,
+    EV_LABEL_WINDOW_BOX_LEVEL,
+    EV_LABEL_WINDOW_BOX_CATCHRATE,
+    //EV_LABEL_WINDOW_BOX_STATS,
+    //EV_LABEL_WINDOW_BOX_STATS_ROW,
+    //EV_LABEL_WINDOW_BOX_ABILITIES,
+
+    // Data
+    //EV_DATA_WINDOW_BOX_SPECIES,
+    //EV_DATA_WINDOW_BOX_LEVEL,
+    //EV_DATA_WINDOW_BOX_CATCHRATE,
+    //EV_DATA_WINDOW_BOX_BASE_STATS,
+    //EV_DATA_WINDOW_BOX_EV_YIELD,
+    //EV_DATA_WINDOW_BOX_ABILITIES,
+    //EV_DATA_WINDOW_BOX_ENCRATE,
 
     // end
-    EV_LABEL_END,
-};
-
-enum DetailBoxData
-{
-    EV_BOX_DATA_SPECIES,
-    EV_BOX_DATA_LVL,
-    EV_BOX_DATA_ENCRATE,
-    EV_BOX_DATA_CATCHRATE,
-    EV_BOX_DATA_EVYIELD,
-    EV_BOX_DATA_ABILITIES,
+    EV_WINDOW_END,
 };
 
 enum EncViewerMode
@@ -114,38 +117,7 @@ enum EncViewerMode
     EV_MODE_SELECT_MON,
 };
 
-enum LandSlots
-{
-    SLOT_L_1,
-    SLOT_L_2,
-    SLOT_L_3,
-    SLOT_L_4,
-    SLOT_L_5,
-    SLOT_L_6,
-    SLOT_L_7,
-    SLOT_L_8,
-    SLOT_L_9,
-    SLOT_L_10,
-    SLOT_L_11,
-    SLOT_L_12,
-    MAX_LAND_SLOTS,
-};
-
-u16 encRateLand[] = 
-{
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_0, 
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_1 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_0,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_2 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_1,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_3 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_2,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_4 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_3,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_5 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_4,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_6 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_5,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_7 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_6,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_8 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_7,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_9 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_8,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_10 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_9,
-    ENCOUNTER_CHANCE_LAND_MONS_SLOT_11 - ENCOUNTER_CHANCE_LAND_MONS_SLOT_10,
-};
+static const u8 encRateLand[12] = {20,20,10,10,10,10,5,5,4,4,1,1};
 
 #define Y_OFFSET 32
 #define X_OFFSET 32
@@ -168,6 +140,7 @@ static void Task_MenuMain(u8 taskId);
 static void PutPageWindowTilemap(u8 page);
 static void ClearPageWindowTilemap(u8 page);
 static void PutPageWindowText(u8 page);
+static void PutPageMonDataText(u8 page);
 static void PutPageWindowIcons(u8 page);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
@@ -187,130 +160,29 @@ static const struct BgTemplate sMenuBgTemplates[] =
         .bg = 0,    // windows, etc
         .charBaseIndex = 0,
         .mapBaseIndex = 31,
-        .priority = 1
+        .priority = 0,
     }, 
     {
         .bg = 1,    // this bg loads the UI tilemap
         .charBaseIndex = 3,
-        .mapBaseIndex = 30,
-        .priority = 2
-    },
-    {
-        .bg = 2,    // this bg loads the UI tilemap
-        .charBaseIndex = 0,
         .mapBaseIndex = 28,
-        .priority = 0
+        .priority = 1,
     }
 };
 
 static const struct WindowTemplate sMenuWindowTemplates[] = 
 {
-    [EV_LABEL_WINDOW_LAND_TITLE] = 
+    [EV_LABEL_WINDOW_BOX_LEVEL] = 
     {
         .bg = 0,            // which bg to print text on
-        .tilemapLeft = 0,   // position from left (per 8 pixels)
-        .tilemapTop = 0,    // position from top (per 8 pixels)
-        .width = 6,        // width (per 8 pixels)
+        .tilemapLeft = 22,   // position from left (per 8 pixels)
+        .tilemapTop = 6,    // position from top (per 8 pixels)
+        .width = 4,        // width (per 8 pixels)
         .height = 2,        // height (per 8 pixels)
         .paletteNum = 15,   // palette index to use for text
         .baseBlock = 1,     // tile start in VRAM
     },
-    [EV_LABEL_WINDOW_FISHING_TITLE] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 0,
-        .tilemapTop = 0,
-        .width = 6,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12,
-    },
-    [EV_LABEL_WINDOW_WATER_ROCK_TITLE] = 
-    {
-        .bg = 0,            
-        .tilemapLeft = 0,
-        .tilemapTop = 0,
-        .width = 6,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12 + 12,
-    },
-    [EV_LABEL_WINDOW_PROMPT_DETAILS] = 
-    {
-        .bg = 0,            
-        .tilemapLeft = 22,
-        .tilemapTop = 0,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12 + 12 + 12,
-    },
-    [EV_LABEL_WINDOW_PROMPT_CANCEL] = 
-    {
-        .bg = 0,            
-        .tilemapLeft = 18,
-        .tilemapTop = 0,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12 + 12 + 12 + 16,
-    },
-    [EV_LABEL_WINDOW_BOX_OVERVIEW] = 
-    {
-        .bg = 0,            
-        .tilemapLeft = 1,
-        .tilemapTop = 3,
-        .width = 12,
-        .height = 16,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12 + 12 + 12 + 16 + 16,
-    },
-    [EV_LABEL_WINDOW_BOX_DETAILS] = 
-    {
-        .bg = 0,            
-        .tilemapLeft = 13,
-        .tilemapTop = 3,
-        .width = 16,
-        .height = 16,
-        .paletteNum = 15,
-        .baseBlock = 1 + 12 + 12 + 12 + 16 + 16 + 192,
-    },
-}; 
-#define LABEL_END 1 + 12 + 12 + 12 + 16 + 16 + 192 + 256
-
-static const struct WindowTemplate sDetailBoxTemplate[] =
-{
-    [EV_BOX_DATA_SPECIES] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 19,
-        .tilemapTop = 3,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = LABEL_END,
-    },
-    [EV_BOX_DATA_LVL] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 19,
-        .tilemapTop = 6,
-        .width = 8,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = LABEL_END + 16,
-    },
-    [EV_BOX_DATA_ENCRATE] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 14,
-        .tilemapTop = 9,
-        .width = 6,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = LABEL_END + 16 + 12,
-    },
-    [EV_BOX_DATA_CATCHRATE] = 
+    [EV_LABEL_WINDOW_BOX_CATCHRATE] = 
     {
         .bg = 0,
         .tilemapLeft = 22,
@@ -318,30 +190,9 @@ static const struct WindowTemplate sDetailBoxTemplate[] =
         .width = 6,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = LABEL_END + 16 + 12 + 12,
+        .baseBlock = 1 + 8,
     },
-    [EV_BOX_DATA_EVYIELD] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 14,
-        .tilemapTop = 12,
-        .width = 6,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = LABEL_END + 16 + 12 + 12 + 12 ,
-    },
-    [EV_BOX_DATA_ABILITIES] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 22,
-        .tilemapTop = 12,
-        .width = 6,
-        .height = 6,
-        .paletteNum = 15,
-        .baseBlock = LABEL_END + 16 + 12 + 12 + 12 + 12,
-    }, 
 }; 
-#define EV_BOX_DATA_END LABEL_END + 16 + 12 + 12 + 12 + 12 + 36
 
 static const u32 sMenuTiles[] = INCBIN_U32("graphics/ui_menu/tiles.4bpp.lz");
 static const u32 sMenuTilemap[] = INCBIN_U32("graphics/ui_menu/tilemap.bin.lz");
@@ -473,17 +324,20 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 6:
-        PutPageWindowIcons(sMenuDataPtr->currPageIndex);
+        PutPageMonDataText(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
     case 7:
-        //PrintToWindow(EV_LABEL_WINDOW_LAND_TITLE, FONT_WHITE);
+        PutPageWindowIcons(sMenuDataPtr->currPageIndex);
+        gMain.state++;
+        break;
+    case 8:
         PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
         taskId = CreateTask(Task_MenuWaitFadeIn, 0);
         BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
         gMain.state++;
         break;
-    case 8:
+    case 9:
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gMain.state++;
         break;
@@ -541,7 +395,6 @@ static bool8 Menu_InitBgs(void)
     ScheduleBgCopyTilemapToVram(1);
     ShowBg(0);
     ShowBg(1);
-    ShowBg(2);
     return TRUE;
 }
 
@@ -580,57 +433,41 @@ static void Menu_InitWindows(void)
     DeactivateAllTextPrinters();
     ScheduleBgCopyTilemapToVram(0);
 
-    for (i = 0; i < EV_LABEL_END; i++)
+    for (i = 0; i < EV_WINDOW_END; i++)
     {
         FillWindowPixelBuffer(i, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
         PutWindowTilemap(i);
         CopyWindowToVram(i, 3);
     }
-    ScheduleBgCopyTilemapToVram(2);
+    //ScheduleBgCopyTilemapToVram(2);
 }
 
-const u8 pokemonNames[MAX_LAND_SLOTS][POKEMON_NAME_LENGTH + 1] = 
-{
-    [SLOT_L_1] = _("Charmander"),
-    [SLOT_L_2] = _("Bulbasaur"),
-    [SLOT_L_3] = _("Togepi"),
-    [SLOT_L_4] = _("Voltorb"),
-    [SLOT_L_5] = _("Bla"),
-    [SLOT_L_6] = _("Floo"),
-    [SLOT_L_7] = _("Fooo"),
-    [SLOT_L_8] = _("Charizard"),
-    [SLOT_L_9] = _("Venoshock"),
-    [SLOT_L_10] = _("Chmander"),
-    [SLOT_L_11] = _("Charnder"),
-    [SLOT_L_12] = _("Charmar"),
-};
 
-static const u8 sText_Species[] = _("Species:");
 static const u8 sText_Level[] = _("LVL:");
-static const u8 sText_EncRate[] = _("Enc. Rate:");
-static const u8 sText_CatchRate[] = _("Catch Rate:");
-static const u8 sText_EVYield[] = _("EV Yield:");
+static const u8 sText_CatchRate[] = _("CatchRate:");
 static const u8 sText_Abilities[] = _("Abilities");
+static const u8 sText_Stats[] = _("Stats");
+static const u8 sText_Base[] = _("Base");
+static const u8 sText_EVs[] = _("EVs");
+
+static const u8 sText_Land[] = _("Land");
+static const u8 sText_WaterRock[] = _("Water\nRock");
+static const u8 sText_Fish[] = _("Fishing");
+
 
 static void PutPageWindowText(u8 page)
 {
-    u8 i;
-
     switch(page)
     {
         case EV_PAGE_LAND:
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_Species,   6*8,    0*8 + 1,    0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_Level,     6*8,    2*8,        0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_EncRate,   1*8,    7*8,        0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_CatchRate, 10*8,   7*8,        0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_EVYield,   1*8,    10*8,       0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_DETAILS, sText_Abilities, 10*8,   10*8,       0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_CATCHRATE, sText_CatchRate, 0, 0, 0, FONT_WHITE);
             break;
         case EV_PAGE_FISHING:
-            PrintToWindow(page, FONT_WHITE);
+            //stub
             break;
         case EV_PAGE_WATER_ROCK:
-            PrintToWindow(page, FONT_WHITE);
+            //stub
             break;
     }
 }
@@ -643,39 +480,31 @@ static void PutPageMonDataText(u8 page)
     switch (page)
     {
         case EV_PAGE_LAND:
-            PrintTextOnWindowSmall(EV_BOX_DATA_SPECIES, gSpeciesNames[species], 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_BOX_DATA_LVL, LevelRangeByIndex(selection), 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_BOX_DATA_ENCRATE, EncRateByIndex(selection), 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_BOX_DATA_CATCHRATE, CatchRateBySpecies(species), 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_BOX_DATA_ABILITIES, gSpeciesNames[species], 0, 0, 0, FONT_WHITE);
+            //stub
+            break; 
         case EV_PAGE_FISHING:
-
+            //stub
+            break;
         case EV_PAGE_WATER_ROCK:
+            //stub
+            break;
     }
 }
 
 static void PutPageWindowTilemap(u8 page)
 {
-    ClearWindowTilemap(EV_LABEL_WINDOW_LAND_TITLE);
-    ClearWindowTilemap(EV_LABEL_WINDOW_FISHING_TITLE);
-    ClearWindowTilemap(EV_LABEL_WINDOW_WATER_ROCK_TITLE);
-
     switch (page)
     {
         case EV_PAGE_LAND:
-            PutWindowTilemap(EV_LABEL_WINDOW_LAND_TITLE);
-            CopyWindowToVram(EV_LABEL_WINDOW_LAND_TITLE, 3);
+            //stub
             break;
         case EV_PAGE_FISHING:
-            PutWindowTilemap(EV_LABEL_WINDOW_FISHING_TITLE);
-            CopyWindowToVram(EV_LABEL_WINDOW_FISHING_TITLE, 3);
+            //stub
             break;
         case EV_PAGE_WATER_ROCK:
-            PutWindowTilemap(EV_LABEL_WINDOW_WATER_ROCK_TITLE);
-            CopyWindowToVram(EV_LABEL_WINDOW_WATER_ROCK_TITLE, 3);
+            //stub
             break;
     }
-    
 }
 
 #define OW_BOX_X 8 + 16
@@ -691,8 +520,10 @@ static void PutPageWindowIcons(u8 page)
                 DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y);
                 break;
         case EV_PAGE_FISHING:
+            //stub
             break;
         case EV_PAGE_WATER_ROCK:
+            //stub
             break;
     }
 }
@@ -704,13 +535,13 @@ static void ClearPageWindowTilemap(u8 page)
     switch (page)
     {
         case EV_PAGE_LAND:
-            ClearWindowTilemap(EV_LABEL_WINDOW_LAND_TITLE);
+            //stub
             break;
         case EV_PAGE_FISHING:
-            ClearWindowTilemap(EV_LABEL_WINDOW_FISHING_TITLE);
+            //stub
             break;
         case EV_PAGE_WATER_ROCK:
-            ClearWindowTilemap(EV_LABEL_WINDOW_WATER_ROCK_TITLE);
+            //stub
             break;
     }
 }
@@ -796,11 +627,24 @@ static u16 SpeciesByIndex(u8 selection)
 static u8* LevelRangeByIndex(u8 selection)
 {
     u8 minLevel, maxLevel;
-    
+
     minLevel = GetWildMonInfo()->wildPokemon[selection].minLevel;
     maxLevel = GetWildMonInfo()->wildPokemon[selection].maxLevel;
-    ConvertIntToDecimalStringN(gStringVar1, minLevel, STR_CONV_MODE_RIGHT_ALIGN, 3);
-    ConvertIntToDecimalStringN(gStringVar2, maxLevel, STR_CONV_MODE_RIGHT_ALIGN, 3);
+
+    if (minLevel <= 9)
+        ConvertIntToDecimalStringN(gStringVar1, minLevel, STR_CONV_MODE_RIGHT_ALIGN, 1);
+    else if (minLevel <= 99)
+        ConvertIntToDecimalStringN(gStringVar1, minLevel, STR_CONV_MODE_RIGHT_ALIGN, 2);
+    else
+        ConvertIntToDecimalStringN(gStringVar1, minLevel, STR_CONV_MODE_RIGHT_ALIGN, 3);
+
+    if (maxLevel <= 9)
+        ConvertIntToDecimalStringN(gStringVar2, maxLevel, STR_CONV_MODE_RIGHT_ALIGN, 1);
+    else if (maxLevel <= 99)
+        ConvertIntToDecimalStringN(gStringVar2, maxLevel, STR_CONV_MODE_RIGHT_ALIGN, 2);
+    else
+        ConvertIntToDecimalStringN(gStringVar2, maxLevel, STR_CONV_MODE_RIGHT_ALIGN, 3);
+
     StringAppend(gStringVar1, dash);
     StringAppend(gStringVar1, gStringVar2);
 
