@@ -2,6 +2,7 @@
 #include "ui_menu.h"
 #include "strings.h"
 #include "battle.h"
+#include "battle_anim.h"
 #include "bg.h"
 #include "data.h"
 #include "decompress.h"
@@ -23,6 +24,7 @@
 #include "menu_helpers.h"
 #include "palette.h"
 #include "party_menu.h"
+#include "pokeball.h"
 #include "scanline_effect.h"
 #include "script.h"
 #include "sound.h"
@@ -95,7 +97,7 @@ enum Windows
     EV_LABEL_WINDOW_BOX_LEVEL,
     EV_LABEL_WINDOW_BOX_CATCHRATE,
     EV_LABEL_WINDOW_BOX_STATS,
-    //EV_LABEL_WINDOW_BOX_STATS_ROW,
+    EV_LABEL_WINDOW_BOX_STATS_ROW,
     //EV_LABEL_WINDOW_BOX_ABILITIES,
 
     // Data
@@ -122,6 +124,9 @@ static const u8 encRateLand[12] = {20,20,10,10,10,10,5,5,4,4,1,1};
 #define Y_OFFSET 32
 #define X_OFFSET 32
 
+#define COMMON 0
+#define RARE 1
+
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
 static EWRAM_DATA u8 *sBg1TilemapBuffer = NULL;
@@ -147,6 +152,8 @@ static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 line
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void DrawMonIcon(u16 species, u8 x, u8 y);
 static u8 DrawMonSprite(u16 species, u8 x, u8 y);
+static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority);
+static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority);
 static u8 GetMaxMonIndex(u8 page);
 static u16 SpeciesByIndex(u8 selection);
 static u8 *LevelRangeByIndex(u8 selection);
@@ -197,12 +204,22 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
         .bg = 0,
-        .tilemapLeft = 14,
-        .tilemapTop = 12,
-        .width = 2,
-        .height = 7,
+        .tilemapLeft = 13,
+        .tilemapTop = 11,
+        .width = 3,
+        .height = 8,
         .paletteNum = 15,
         .baseBlock = 1 + 8 + 12,
+    },
+    [EV_LABEL_WINDOW_BOX_STATS_ROW] = 
+    {
+        .bg = 0,
+        .tilemapLeft = 13,
+        .tilemapTop = 10,
+        .width = 8,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 1 + 8 + 12 + 24,
     },
 }; 
 
@@ -223,7 +240,6 @@ static const struct OamData sOamData_FrontPic =
     .affineParam = 0,
 };
 
-#define TAG_FRONT_PIC 20000
 static const struct SpriteTemplate sSpriteTemplate_FrontPic = 
 {
     .tileTag = TAG_NONE,
@@ -490,9 +506,6 @@ static void Menu_InitWindows(void)
 static const u8 sText_Level[] = _("LVL:");
 static const u8 sText_CatchRate[] = _("CatchRate:");
 static const u8 sText_Abilities[] = _("Abilities");
-static const u8 sText_Stats[] = _("Stats");
-static const u8 sText_Base[] = _("Base");
-static const u8 sText_EVs[] = _("EVs");
 
 static const u8 sText_Land[] = _("Land");
 static const u8 sText_WaterRock[] = _("Water\nRock");
@@ -505,6 +518,8 @@ static const u8 sText_SATK[] = _("SAT");
 static const u8 sText_SDEF[] = _("SDF");
 static const u8 sText_SPD[]  = _("SPD");
 
+static const u8 sText_Base[] = _("Base");
+static const u8 sText_EVs[] = _("EVs");
 
 static void PutPageWindowText(u8 page)
 {
@@ -513,12 +528,16 @@ static void PutPageWindowText(u8 page)
         case EV_PAGE_LAND:
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_WHITE);
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_CATCHRATE, sText_CatchRate, 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 0, 9, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 0, 18, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 0, 27, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 0, 36, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 0, 45, 0, FONT_WHITE);
+
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 3, 5, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 3, 14, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 3, 23, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 3, 32, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 3, 41, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 3, 50, 0, FONT_WHITE);
+
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS_ROW, sText_Base, 20, 4, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS_ROW, sText_EVs, 44, 4, 0, FONT_WHITE);
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -590,10 +609,16 @@ static void PutPageWindowSprites(u8 page)
     u8 spriteId;
     u8 selection = sMenuDataPtr->currMonIndex;
     u16 species = SpeciesByIndex(selection);
+    u16 itemCommon = gSpeciesInfo[species].itemCommon;
+    u16 itemRare = gSpeciesInfo[species].itemRare;
+
     switch(page)
     {
         case EV_PAGE_LAND:
-            spriteId = DrawMonSprite(species, 138, 57);
+            DrawMonSprite(species, 138, 57);
+            DrawItemSprites(itemCommon, COMMON, 188, 92, 0);
+            DrawItemSprites(itemRare, RARE, 212, 92, 0);
+            DrawPokeballSprite(10, 10, 0);
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -703,6 +728,22 @@ static u8 DrawMonSprite(u16 species, u8 x, u8 y)
     spriteTemplate.tileTag = sheet->tag;
     spriteId = CreateSprite(&spriteTemplate, x, y, 0);
     return spriteId;
+}
+
+#define TAG_ITEM_ICON 5000
+static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
+{
+    AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+}
+
+static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
+{
+    u8 ball = ItemIdToBallId(ITEM_POKE_BALL);
+
+    LoadBallGfx(ball);
+    u8 spriteId = CreateSprite(&gBallSpriteTemplates[ball], x, y, subpriority);
+    gSprites[spriteId].callback = SpriteCallbackDummy;
+    gSprites[spriteId].oam.priority = 0;
 }
 
 static u8 GetMaxMonIndex(u8 page)
