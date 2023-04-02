@@ -77,7 +77,26 @@ enum SpriteArrIds
     SPRITE_ARR_ID_POKEBALL,
     SPRITE_ARR_ID_MON_TYPE_1,
     SPRITE_ARR_ID_MON_TYPE_2,
+    SPRITE_ARR_ID_HAND_CURSOR,
+    SPRITE_ARR_ID_HAND_SHADOW,
     SPRITE_ARR_ID_COUNT,
+};
+
+#define PALTAG_CURSOR_1 SPRITE_ARR_ID_HAND_CURSOR - 7
+#define PALTAG_CURSOR_2 SPRITE_ARR_ID_HAND_SHADOW - 7
+
+enum HandCursorTags
+{
+    GFXTAG_CURSOR = 3000,
+    GFXTAG_CURSOR_SHADOW,
+};
+
+enum HandCursorAnim
+{
+    CURSOR_ANIM_BOUNCE,
+    CURSOR_ANIM_STILL,
+    CURSOR_ANIM_OPEN,
+    CURSOR_ANIM_FIST,
 };
 
 struct MenuResources
@@ -96,6 +115,8 @@ struct MenuResources
     u8 minMonIndex;
     u8 maxMonIndex;
     u8 mode;
+    struct Sprite *cursorSprite;
+    struct Sprite *cursorShadowSprite;
 };
 
 enum Pages
@@ -175,6 +196,8 @@ static void PutPageWindowSprites(u8 page);
 static void ReloadAllPageData(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
+static void CreateCursorSprites(void);
+static void CursorUpdatePos(void);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
 static void DrawMonSprite(u16 species, u8 x, u8 y);
 static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority);
@@ -312,6 +335,10 @@ static const u32 sMenuTiles[] = INCBIN_U32("graphics/ui_menu/tiles.4bpp.lz");
 static const u32 sMenuTilemap[] = INCBIN_U32("graphics/ui_menu/tilemap.bin.lz");
 static const u16 sMenuPalette[] = INCBIN_U16("graphics/ui_menu/palette.gbapal");
 
+static const u16 sHandCursor_Pal[] = INCBIN_U16("graphics/pokemon_storage/hand_cursor.gbapal");
+static const u8 sHandCursor_Gfx[] = INCBIN_U8("graphics/pokemon_storage/hand_cursor.4bpp");
+static const u8 sHandCursorShadow_Gfx[] = INCBIN_U8("graphics/pokemon_storage/hand_cursor_shadow.4bpp");
+
 enum Colors
 {
     FONT_BLACK,
@@ -329,7 +356,6 @@ static const u8 sMenuWindowFontColors[][3] =
 };
 
 static const u8 dash[] = _(" - ");
-static const u8 sText_AbilitiesDynamic[] = _("{DYNAMIC 0}\n{DYNAMIC 1}\n{DYNAMIC 2}");
 
 //==========FUNCTIONS==========//
 // UI loader template
@@ -447,6 +473,7 @@ static bool8 Menu_DoGfxSetup(void)
         break;
     case 8:
         PutPageWindowSprites(sMenuDataPtr->currPageIndex);
+        CreateCursorSprites();
         gMain.state++;
         break;
     case 9:
@@ -580,6 +607,7 @@ static void Task_MenuMain(u8 taskId)
         if (sMenuDataPtr->currMonIndex < sMenuDataPtr->maxMonIndex)
         {
             sMenuDataPtr->currMonIndex++;
+            CursorUpdatePos();
             ReloadAllPageData();
         }
     }
@@ -589,6 +617,7 @@ static void Task_MenuMain(u8 taskId)
         if (sMenuDataPtr->currMonIndex > sMenuDataPtr->minMonIndex)
         {
             sMenuDataPtr->currMonIndex--;
+            CursorUpdatePos();
             ReloadAllPageData();
         }
     }
@@ -598,6 +627,7 @@ static void Task_MenuMain(u8 taskId)
         if (sMenuDataPtr->currMonIndex + 2 < sMenuDataPtr->maxMonIndex)
         {
             sMenuDataPtr->currMonIndex += 3;
+            CursorUpdatePos();
             ReloadAllPageData();
         }
     }
@@ -607,6 +637,7 @@ static void Task_MenuMain(u8 taskId)
         if (sMenuDataPtr->currMonIndex - 2 > sMenuDataPtr->minMonIndex)
         {
             sMenuDataPtr->currMonIndex -= 3;
+            CursorUpdatePos();
             ReloadAllPageData();
         }
     }
@@ -856,6 +887,131 @@ static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId)
 {
     LoadMonIconPalette(species);
     sMenuDataPtr->spriteIds[spriteArrId] = CreateMonIconNoPersonality(species, SpriteCallbackDummy, x, y, 1, 0);
+}
+
+static void SpriteCB_CursorShadow(struct Sprite *sprite)
+{
+    sprite->x = sMenuDataPtr->cursorSprite->x;
+    sprite->y = sMenuDataPtr->cursorSprite->y + 20;
+}
+
+static void CreateCursorSprites(void)
+{
+    struct SpriteSheet spriteSheets[] =
+    {
+        {sHandCursor_Gfx, 0x800, GFXTAG_CURSOR},
+        {sHandCursorShadow_Gfx, 0x80, GFXTAG_CURSOR_SHADOW},
+        {}
+    };
+
+    struct SpritePalette spritePalettes[] =
+    {
+        {sHandCursor_Pal, PALTAG_CURSOR_1},
+        {}
+    };
+
+    static const struct OamData sOamData_Cursor =
+    {
+        .shape = SPRITE_SHAPE(32x32),
+        .size = SPRITE_SIZE(32x32),
+        .priority = 1,
+    };
+    static const struct OamData sOamData_CursorShadow =
+    {
+        .shape = SPRITE_SHAPE(16x16),
+        .size = SPRITE_SIZE(16x16),
+        .priority = 1,
+    };
+
+    static const union AnimCmd sAnim_Cursor_Bouncing[] =
+    {
+        ANIMCMD_FRAME(0, 30),
+        ANIMCMD_FRAME(16, 30),
+        ANIMCMD_JUMP(0)
+    };
+    static const union AnimCmd sAnim_Cursor_Still[] =
+    {
+        ANIMCMD_FRAME(0, 5),
+        ANIMCMD_END
+    };
+    static const union AnimCmd sAnim_Cursor_Open[] =
+    {
+        ANIMCMD_FRAME(32, 5),
+        ANIMCMD_END
+    };
+    static const union AnimCmd sAnim_Cursor_Fist[] =
+    {
+        ANIMCMD_FRAME(48, 5),
+        ANIMCMD_END
+    };
+
+    static const union AnimCmd *const sAnims_Cursor[] =
+    {
+        [CURSOR_ANIM_BOUNCE] = sAnim_Cursor_Bouncing,
+        [CURSOR_ANIM_STILL]  = sAnim_Cursor_Still,
+        [CURSOR_ANIM_OPEN]   = sAnim_Cursor_Open,
+        [CURSOR_ANIM_FIST]   = sAnim_Cursor_Fist
+    };
+
+    static const struct SpriteTemplate sSpriteTemplate_Cursor =
+    {
+        .tileTag = GFXTAG_CURSOR,
+        .paletteTag = PALTAG_CURSOR_1,
+        .oam = &sOamData_Cursor,
+        .anims = sAnims_Cursor,
+        .images = NULL,
+        .affineAnims = gDummySpriteAffineAnimTable,
+        .callback = SpriteCallbackDummy,
+    };
+
+    static const struct SpriteTemplate sSpriteTemplate_CursorShadow =
+    {
+        .tileTag = GFXTAG_CURSOR_SHADOW,
+        .paletteTag = PALTAG_CURSOR_1,
+        .oam = &sOamData_CursorShadow,
+        .anims = gDummySpriteAnimTable,
+        .images = NULL,
+        .affineAnims = gDummySpriteAffineAnimTable,
+        .callback = SpriteCB_CursorShadow,
+    };
+
+    LoadSpriteSheets(spriteSheets);
+    LoadSpritePalettes(spritePalettes);
+    u8 i = sMenuDataPtr->currMonIndex;
+    int x = (i%3) * X_OFFSET + OW_BOX_X;
+    int y = (i/3) * Y_OFFSET + OW_BOX_Y - 8;
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_CURSOR] = CreateSprite(&sSpriteTemplate_Cursor, x, y, 0);
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_HAND_CURSOR] = sSpriteTemplate_Cursor.paletteTag;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_HAND_CURSOR] = sSpriteTemplate_Cursor.tileTag;
+
+    if (sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_CURSOR] != MAX_SPRITES)
+    {
+        sMenuDataPtr->cursorSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_CURSOR]];
+        //sMenuDataPtr->cursorSprite->oam.paletteNum = PALTAG_CURSOR_1;
+        sMenuDataPtr->cursorSprite->oam.priority = 1;
+    }
+    else
+    {
+        sMenuDataPtr->cursorSprite = NULL;
+    }
+
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_SHADOW] = CreateSprite(&sSpriteTemplate_CursorShadow, x, y, 10);
+    if (sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_SHADOW] != MAX_SPRITES)
+    {
+        sMenuDataPtr->cursorShadowSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_SHADOW]];
+        sMenuDataPtr->cursorShadowSprite->oam.priority = 1;
+    }
+    else
+    {
+        sMenuDataPtr->cursorShadowSprite = NULL;
+    }
+}
+
+static void CursorUpdatePos(void)
+{
+    int i = sMenuDataPtr->currMonIndex;
+    sMenuDataPtr->cursorSprite->x = (i%3) * X_OFFSET + OW_BOX_X;
+    sMenuDataPtr->cursorSprite->y = (i/3) * Y_OFFSET + OW_BOX_Y - 8;
 }
 
 static void DrawMonSprite(u16 species, u8 x, u8 y)
