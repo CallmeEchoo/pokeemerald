@@ -51,11 +51,36 @@
  */
  
 //==========DEFINES==========//
+#define Y_OFFSET 32
+#define X_OFFSET 32
+
+#define COMMON 0
+#define RARE 1
+
+#define TAG_MOVE_TYPES 5000
+#define TAG_ITEM_ICON 5001 // 5002 for rare
+
+#define MAX_MON_COUNT 12
+#define TYPE_ICON_SPRITE_COUNT 2
+
+enum SpriteArrIds
+{
+    SPRITE_ARR_ID_MON_ICONS = MAX_MON_COUNT, // for max 12 land mon icons
+    SPRITE_ARR_ID_MON_FRONT,
+    SPRITE_ARR_ID_ITEM_COMMON,
+    SPRITE_ARR_ID_ITEM_RARE,
+    SPRITE_ARR_ID_POKEBALL,
+    SPRITE_ARR_ID_MON_TYPE_1,
+    SPRITE_ARR_ID_MON_TYPE_2,
+    SPRITE_ARR_ID_COUNT,
+};
+
 struct MenuResources
 {
     MainCallback savedCallback;     // determines callback to run when we exit. e.g. where do we want to go after closing the menu
     u8 gfxLoadState;
 
+    u8 spriteIds[SPRITE_ARR_ID_COUNT];
     u16 headerId;
     u8 currPageIndex;
     u8 minPageIndex;
@@ -101,7 +126,7 @@ enum Windows
     //EV_LABEL_WINDOW_BOX_ABILITIES,
 
     // Data
-    //EV_DATA_WINDOW_BOX_SPECIES,
+    EV_DATA_WINDOW_BOX_SPECIES,
     //EV_DATA_WINDOW_BOX_LEVEL,
     //EV_DATA_WINDOW_BOX_CATCHRATE,
     //EV_DATA_WINDOW_BOX_BASE_STATS,
@@ -120,12 +145,6 @@ enum EncViewerMode
 };
 
 static const u8 encRateLand[12] = {20,20,10,10,10,10,5,5,4,4,1,1};
-
-#define Y_OFFSET 32
-#define X_OFFSET 32
-
-#define COMMON 0
-#define RARE 1
 
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
@@ -150,8 +169,8 @@ static void PutPageWindowIcons(u8 page);
 static void PutPageWindowSprites(u8 page);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
-static void DrawMonIcon(u16 species, u8 x, u8 y);
-static u8 DrawMonSprite(u16 species, u8 x, u8 y);
+static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
+static void DrawMonSprite(u16 species, u8 x, u8 y);
 static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority);
 static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority);
 static u8 GetMaxMonIndex(u8 page);
@@ -220,6 +239,16 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .height = 2,
         .paletteNum = 15,
         .baseBlock = 1 + 8 + 12 + 24,
+    },
+    [EV_DATA_WINDOW_BOX_SPECIES] = 
+    {
+        .bg = 0,
+        .tilemapLeft = 22,
+        .tilemapTop = 3,
+        .width = 7,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 1 + 8 + 12 + 24 + 16,
     },
 }; 
 
@@ -552,7 +581,7 @@ static void PutPageMonDataText(u8 page)
 {
     u8 selection = sMenuDataPtr->currMonIndex;
     u16 species = SpeciesByIndex(selection);
-
+    
     switch (page)
     {
         case EV_PAGE_LAND:
@@ -593,7 +622,7 @@ static void PutPageWindowIcons(u8 page)
         case EV_PAGE_LAND:
             const struct WildPokemonInfo *LandMons =  gWildMonHeaders[sMenuDataPtr->headerId].landMonsInfo;
             for (i = 0; i < sMenuDataPtr->maxMonIndex; i++)
-                DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y);
+                DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y, i);
                 break;
         case EV_PAGE_FISHING:
             //stub
@@ -710,15 +739,14 @@ const static struct CompressedSpriteSheet *GetMonSpriteSheet(u16 species)
     return &gMonFrontPicTable[species];
 }
 
-static void DrawMonIcon(u16 species, u8 x, u8 y)
+static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId)
 {
     LoadMonIconPalette(species);
-    CreateMonIconNoPersonality(species, SpriteCallbackDummy, x, y, 1, 0);
+    sMenuDataPtr->spriteIds[spriteArrId] = CreateMonIconNoPersonality(species, SpriteCallbackDummy, x, y, 1, 0);
 }
 
-static u8 DrawMonSprite(u16 species, u8 x, u8 y)
+static void DrawMonSprite(u16 species, u8 x, u8 y)
 {
-    u8 spriteId;
     const struct CompressedSpritePalette *pal = GetMonSpritePal(species);
     const struct CompressedSpriteSheet *sheet = GetMonSpriteSheet(species);
     struct SpriteTemplate spriteTemplate = sSpriteTemplate_FrontPic;
@@ -726,14 +754,12 @@ static u8 DrawMonSprite(u16 species, u8 x, u8 y)
     LoadCompressedSpriteSheet(sheet);
     spriteTemplate.paletteTag = pal->tag;
     spriteTemplate.tileTag = sheet->tag;
-    spriteId = CreateSprite(&spriteTemplate, x, y, 0);
-    return spriteId;
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_FRONT] = CreateSprite(&spriteTemplate, x, y, 0);
 }
 
-#define TAG_ITEM_ICON 5000
 static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
 {
-    AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1 + rarity] = AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
 }
 
 static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
@@ -741,9 +767,9 @@ static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
     u8 ball = ItemIdToBallId(ITEM_POKE_BALL);
 
     LoadBallGfx(ball);
-    u8 spriteId = CreateSprite(&gBallSpriteTemplates[ball], x, y, subpriority);
-    gSprites[spriteId].callback = SpriteCallbackDummy;
-    gSprites[spriteId].oam.priority = 0;
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL] = CreateSprite(&gBallSpriteTemplates[ball], x, y, subpriority);
+    gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].callback = SpriteCallbackDummy;
+    gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].oam.priority = 0;
 }
 
 static u8 GetMaxMonIndex(u8 page)
