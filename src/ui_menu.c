@@ -86,6 +86,8 @@ struct MenuResources
     u8 gfxLoadState;
 
     u8 spriteIds[SPRITE_ARR_ID_COUNT];
+    u32 paletteTag[SPRITE_ARR_ID_COUNT];
+    u32 tileTag[SPRITE_ARR_ID_COUNT];
     u16 headerId;
     u8 currPageIndex;
     u8 minPageIndex;
@@ -125,7 +127,6 @@ enum Windows
     // Box
     //EV_LABEL_WINDOW_BOX_OVERVIEW,
     EV_LABEL_WINDOW_BOX_LEVEL,
-    EV_LABEL_WINDOW_BOX_CATCHRATE,
     EV_LABEL_WINDOW_BOX_STATS,
     //EV_LABEL_WINDOW_BOX_ABILITIES,
 
@@ -163,6 +164,7 @@ static void Menu_InitWindows(void);
 static void PrintToWindow(u8 windowId, u8 colorIdx);
 static void Task_MenuWaitFadeIn(u8 taskId);
 static void Task_MenuMain(u8 taskId);
+static void Task_MenuTurnOff(u8 taskId);
 
 static void PutPageWindowTilemap(u8 page);
 static void ClearPageWindowTilemap(u8 page);
@@ -170,6 +172,7 @@ static void PutPageWindowText(u8 page);
 static void PutPageMonDataText(u8 page);
 static void PutPageWindowIcons(u8 page);
 static void PutPageWindowSprites(u8 page);
+static void ReloadAllPageData(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
@@ -215,16 +218,6 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .paletteNum = 15,   // palette index to use for text
         .baseBlock = 1,     // tile start in VRAM
     },
-    [EV_LABEL_WINDOW_BOX_CATCHRATE] = 
-    {
-        .bg = 0,
-        .tilemapLeft = 22,
-        .tilemapTop = 8,
-        .width = 6,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 4,
-    },
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
         .bg = 0,
@@ -233,7 +226,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 8,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12,
+        .baseBlock = 1 + 4,
     },
     [EV_DATA_WINDOW_BOX_SPECIES] = 
     {
@@ -243,7 +236,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 7,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12 + 24,
+        .baseBlock = 1 + 4 + 24,
     },
     [EV_DATA_WINDOW_BOX_LEVEL_CATCH]
     {
@@ -253,7 +246,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 5,
         .height = 4,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12 + 24 + 14,
+        .baseBlock = 1 + 4 + 24 + 14,
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
@@ -263,7 +256,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12 + 24 + 14 + 20,
+        .baseBlock = 1 + 4 + 24 + 14 + 20,
     },
     [EV_DATA_WINDOW_BOX_EV_YIELD]
     {
@@ -273,7 +266,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12 + 24 + 14 + 20 + 27,
+        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27,
     },
     [EV_DATA_WINDOW_BOX_ABILITIES]
     {
@@ -283,7 +276,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 7,
         .height = 6,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 12 + 24 + 14 + 20 + 27 + 27,
+        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27,
     },
 }; 
 
@@ -368,7 +361,7 @@ void Menu_Init(MainCallback callback)
     sMenuDataPtr->maxPageIndex = EV_PAGE_WATER_ROCK;
     sMenuDataPtr->currPageIndex = EV_PAGE_LAND;
     sMenuDataPtr->minMonIndex = 0;
-    sMenuDataPtr->maxMonIndex = 12; //GetMaxMonIndex(sMenuDataPtr->currPageIndex);
+    sMenuDataPtr->maxMonIndex = 11; //GetMaxMonIndex(sMenuDataPtr->currPageIndex);
     sMenuDataPtr->currMonIndex = 0;
     sMenuDataPtr->headerId = GetCurrentMapWildMonHeaderId();
     
@@ -441,7 +434,7 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 5:
-        PutPageWindowText(sMenuDataPtr->currPageIndex);
+        PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
     case 6:
@@ -457,7 +450,7 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 9:
-        PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
+        PutPageWindowText(sMenuDataPtr->currPageIndex);
         taskId = CreateTask(Task_MenuWaitFadeIn, 0);
         BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
         gMain.state++;
@@ -564,7 +557,99 @@ static void Menu_InitWindows(void)
         PutWindowTilemap(i);
         CopyWindowToVram(i, 3);
     }
-    //ScheduleBgCopyTilemapToVram(2);
+}
+
+static void Task_MenuWaitFadeIn(u8 taskId)
+{
+    if (!gPaletteFade.active)
+        gTasks[taskId].func = Task_MenuMain;
+}
+
+/* This is the meat of the UI. This is where you wait for player inputs and can branch to other tasks accordingly */
+static void Task_MenuMain(u8 taskId)
+{
+    if (JOY_NEW(B_BUTTON))
+    {
+        PlaySE(SE_PC_OFF);
+        BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+        gTasks[taskId].func = Task_MenuTurnOff;
+    }
+    if (JOY_NEW(DPAD_RIGHT))
+    {
+        PlaySE(SE_SELECT);
+        if (sMenuDataPtr->currMonIndex < sMenuDataPtr->maxMonIndex)
+        {
+            sMenuDataPtr->currMonIndex++;
+            ReloadAllPageData();
+        }
+    }
+    if (JOY_NEW(DPAD_LEFT))
+    {
+        PlaySE(SE_SELECT);
+        if (sMenuDataPtr->currMonIndex > sMenuDataPtr->minMonIndex)
+        {
+            sMenuDataPtr->currMonIndex--;
+            ReloadAllPageData();
+        }
+    }
+    if (JOY_NEW(DPAD_DOWN))
+    {
+        PlaySE(SE_SELECT);
+        if (sMenuDataPtr->currMonIndex + 2 < sMenuDataPtr->maxMonIndex)
+        {
+            sMenuDataPtr->currMonIndex += 3;
+            ReloadAllPageData();
+        }
+    }
+    if (JOY_NEW(DPAD_UP))
+    {
+        PlaySE(SE_SELECT);
+        if (sMenuDataPtr->currMonIndex - 2 > sMenuDataPtr->minMonIndex)
+        {
+            sMenuDataPtr->currMonIndex -= 3;
+            ReloadAllPageData();
+        }
+    }
+}
+
+static void Task_MenuTurnOff(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    if (!gPaletteFade.active)
+    {
+        SetMainCallback2(sMenuDataPtr->savedCallback);
+        Menu_FreeResources();
+        DestroyTask(taskId);
+    }
+}
+
+static void ReloadAllPageData(void)
+{
+    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_FRONT]]);
+    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_MON_FRONT]);
+    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_MON_FRONT]);
+
+    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON]]);
+    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON]);
+    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON]);
+
+    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_RARE]]);
+    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE]);
+    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE]);
+
+    DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]]);
+    //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1]]);
+    //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]]);
+
+    ClearPageWindowTilemap(sMenuDataPtr->currPageIndex);
+    PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
+    PutPageWindowText(sMenuDataPtr->currPageIndex);
+    PutPageMonDataText(sMenuDataPtr->currPageIndex);
+    PutPageWindowSprites(sMenuDataPtr->currPageIndex);
+
+    ConvertIntToDecimalStringN(gStringVar1, sMenuDataPtr->currMonIndex, STR_CONV_MODE_RIGHT_ALIGN, 2);
+    DebugPrintfLevel(MGBA_LOG_ERROR, gStringVar1);
 }
 
 static const u8 sText_Level[] = _("{LV}.");
@@ -589,16 +674,16 @@ static void PutPageWindowText(u8 page)
     switch(page)
     {
         case EV_PAGE_LAND:
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 3, 5, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 3, 14, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 3, 23, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 3, 32, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 3, 41, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 3, 50, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, sText_Base, 0, 4, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, sText_EVs, 0, 4, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, sText_Abilities, 0, 0, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 3, 5, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 3, 14, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 3, 23, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 3, 32, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 3, 41, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 3, 50, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, sText_Base, 0, 4, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, sText_EVs, 0, 4, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, sText_Abilities, 0, 0, 0, FONT_BLACK);
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -617,27 +702,27 @@ static void PutPageMonDataText(u8 page)
     switch (page)
     {
         case EV_PAGE_LAND:
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateBySpecies(species), 0, 12, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateBySpecies(species), 0, 12, 0, FONT_BLACK);
             // base stats
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_HP), 3, 13, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_ATK), 3, 22, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_DEF), 3, 31, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPATK), 3, 40, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPDEF), 3, 49, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPEED), 3, 58, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_HP), 3, 13, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_ATK), 3, 22, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_DEF), 3, 31, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPATK), 3, 40, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPDEF), 3, 49, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPEED), 3, 58, 0, FONT_BLACK);
             // ev yields
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_HP), 5, 13, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_ATK), 5, 22, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_DEF), 5, 31, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPATK), 5, 40, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPDEF), 5, 49, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPEED), 5, 58, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_HP), 5, 13, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_ATK), 5, 22, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_DEF), 5, 31, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPATK), 5, 40, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPDEF), 5, 49, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPEED), 5, 58, 0, FONT_BLACK);
             // abilities
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_1), 0, 16, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 0, 25, 0, FONT_WHITE);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_HIDDEN), 0, 34, 0, FONT_WHITE);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_1), 0, 16, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 0, 25, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_HIDDEN), 0, 34, 0, FONT_BLACK);
             break; 
         case EV_PAGE_FISHING:
             //stub
@@ -650,10 +735,16 @@ static void PutPageMonDataText(u8 page)
 
 static void PutPageWindowTilemap(u8 page)
 {
+    u8 i;
     switch (page)
     {
         case EV_PAGE_LAND:
-            //stub
+            for (i = 0; i < EV_WINDOW_END; i++)
+            {
+                FillWindowPixelBuffer(i, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
+                PutWindowTilemap(i);
+                CopyWindowToVram(i, 3);
+            }
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -673,7 +764,7 @@ static void PutPageWindowIcons(u8 page)
     {
         case EV_PAGE_LAND:
             const struct WildPokemonInfo *LandMons =  gWildMonHeaders[sMenuDataPtr->headerId].landMonsInfo;
-            for (i = 0; i < sMenuDataPtr->maxMonIndex; i++)
+            for (i = 0; i <= sMenuDataPtr->maxMonIndex; i++)
                 DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y, i);
                 break;
         case EV_PAGE_FISHING:
@@ -713,11 +804,11 @@ static void PutPageWindowSprites(u8 page)
 static void ClearPageWindowTilemap(u8 page)
 {
     u8 i;
-
     switch (page)
     {
         case EV_PAGE_LAND:
-            //stub
+            for (i = 0; i < EV_WINDOW_END; i++)
+                ClearWindowTilemap(i);
             break;
         case EV_PAGE_FISHING:
             //stub
@@ -751,36 +842,6 @@ static void PrintToWindow(u8 windowId, u8 colorIdx)
     CopyWindowToVram(windowId, 3);
 }
 
-static void Task_MenuWaitFadeIn(u8 taskId)
-{
-    if (!gPaletteFade.active)
-        gTasks[taskId].func = Task_MenuMain;
-}
-
-static void Task_MenuTurnOff(u8 taskId)
-{
-    s16 *data = gTasks[taskId].data;
-
-    if (!gPaletteFade.active)
-    {
-        SetMainCallback2(sMenuDataPtr->savedCallback);
-        Menu_FreeResources();
-        DestroyTask(taskId);
-    }
-}
-
-
-/* This is the meat of the UI. This is where you wait for player inputs and can branch to other tasks accordingly */
-static void Task_MenuMain(u8 taskId)
-{
-    if (JOY_NEW(B_BUTTON))
-    {
-        PlaySE(SE_PC_OFF);
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
-        gTasks[taskId].func = Task_MenuTurnOff;
-    }
-}
-
 const static struct CompressedSpritePalette *GetMonSpritePal(u16 species)
 {
     return &gMonPaletteTable[species];
@@ -806,12 +867,23 @@ static void DrawMonSprite(u16 species, u8 x, u8 y)
     LoadCompressedSpriteSheet(sheet);
     spriteTemplate.paletteTag = pal->tag;
     spriteTemplate.tileTag = sheet->tag;
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_MON_FRONT] = pal->tag;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_MON_FRONT] = sheet->tag;
     sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_FRONT] = CreateSprite(&spriteTemplate, x, y, 0);
 }
 
 static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
 {
-    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1 + rarity] = AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity] = AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+    if (!rarity)
+    {
+        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON] = TAG_ITEM_ICON + rarity;
+        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON] = TAG_ITEM_ICON + rarity;
+    } else 
+    {
+        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE] = TAG_ITEM_ICON + rarity;
+        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE] = TAG_ITEM_ICON + rarity;
+    }
 }
 
 static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
@@ -822,6 +894,7 @@ static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
     sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL] = CreateSprite(&gBallSpriteTemplates[ball], x, y, subpriority);
     gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].callback = SpriteCallbackDummy;
     gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].oam.priority = 0;
+
 }
 
 static u8 GetMaxMonIndex(u8 page)
