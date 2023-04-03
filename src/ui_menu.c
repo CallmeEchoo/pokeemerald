@@ -146,7 +146,7 @@ enum Windows
     //EV_LABEL_WINDOW_PROMPT_CANCEL,
 
     // Box
-    //EV_LABEL_WINDOW_BOX_OVERVIEW,
+    EV_LABEL_WINDOW_BOX_OVERVIEW,
     EV_LABEL_WINDOW_BOX_LEVEL,
     EV_LABEL_WINDOW_BOX_STATS,
     //EV_LABEL_WINDOW_BOX_ABILITIES,
@@ -157,7 +157,7 @@ enum Windows
     EV_DATA_WINDOW_BOX_BASE_STATS,
     EV_DATA_WINDOW_BOX_EV_YIELD,
     EV_DATA_WINDOW_BOX_ABILITIES,
-    //EV_DATA_WINDOW_BOX_ENCRATE,
+    EV_DATA_WINDOW_BOX_ENCRATE,
 
     // end
     EV_WINDOW_END,
@@ -187,8 +187,9 @@ static void Task_MenuWaitFadeIn(u8 taskId);
 static void Task_MenuMain(u8 taskId);
 static void Task_MenuTurnOff(u8 taskId);
 
-static void PutPageWindowTilemap(u8 page);
 static void ClearPageWindowTilemap(u8 page);
+static void ClearSpriteData(u8 spriteId);
+static void PutPageWindowTilemap(u8 page);
 static void PutPageWindowText(u8 page);
 static void PutPageMonDataText(u8 page);
 static void PutPageWindowIcons(u8 page);
@@ -196,6 +197,7 @@ static void PutPageWindowSprites(u8 page);
 static void ReloadAllPageData(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
+static void PrintTextOnWindowNarrow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void CreateCursorSprites(void);
 static void CursorUpdatePos(void);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
@@ -300,6 +302,26 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .height = 6,
         .paletteNum = 15,
         .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27,
+    },
+    [EV_DATA_WINDOW_BOX_ENCRATE]
+    {
+        .bg = 0,
+        .tilemapLeft = 18,
+        .tilemapTop = 3,
+        .width = 3,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27 + 42,
+    },
+    [EV_LABEL_WINDOW_BOX_OVERVIEW]
+    {
+        .bg = 0,
+        .tilemapLeft = 1,
+        .tilemapTop = 3,
+        .width = 12,
+        .height = 16,
+        .paletteNum = 15,
+        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27 + 42 + 6,
     },
 }; 
 
@@ -657,17 +679,10 @@ static void Task_MenuTurnOff(u8 taskId)
 
 static void ReloadAllPageData(void)
 {
-    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_FRONT]]);
-    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_MON_FRONT]);
-    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_MON_FRONT]);
 
-    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON]]);
-    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON]);
-    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON]);
-
-    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_RARE]]);
-    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE]);
-    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE]);
+    ClearSpriteData(SPRITE_ARR_ID_MON_FRONT);
+    ClearSpriteData(SPRITE_ARR_ID_ITEM_COMMON);
+    ClearSpriteData(SPRITE_ARR_ID_ITEM_RARE);
 
     DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]]);
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1]]);
@@ -678,9 +693,6 @@ static void ReloadAllPageData(void)
     PutPageWindowText(sMenuDataPtr->currPageIndex);
     PutPageMonDataText(sMenuDataPtr->currPageIndex);
     PutPageWindowSprites(sMenuDataPtr->currPageIndex);
-
-    ConvertIntToDecimalStringN(gStringVar1, sMenuDataPtr->currMonIndex, STR_CONV_MODE_RIGHT_ALIGN, 2);
-    DebugPrintfLevel(MGBA_LOG_ERROR, gStringVar1);
 }
 
 static const u8 sText_Level[] = _("{LV}.");
@@ -725,17 +737,20 @@ static void PutPageWindowText(u8 page)
     }
 }
 
+#define OW_BOX_X 8 + 16
+#define OW_BOX_Y 24 + 16
 static void PutPageMonDataText(u8 page)
 {
     u8 selection = sMenuDataPtr->currMonIndex;
     u16 species = SpeciesByIndex(selection);
-    
+    int i;
     switch (page)
     {
         case EV_PAGE_LAND:
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
+            PrintTextOnWindowNarrow(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateBySpecies(species), 0, 12, 0, FONT_BLACK);
+            PrintTextOnWindow(EV_DATA_WINDOW_BOX_ENCRATE, EncRateByIndex(selection), 0, 0, 0, FONT_BLUE);
             // base stats
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_HP), 3, 13, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_ATK), 3, 22, 0, FONT_BLACK);
@@ -753,7 +768,7 @@ static void PutPageMonDataText(u8 page)
             // abilities
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_1), 0, 16, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 0, 25, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_HIDDEN), 0, 34, 0, FONT_BLACK);
+            //PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_HIDDEN), 0, 34, 0, FONT_BLACK);
             break; 
         case EV_PAGE_FISHING:
             //stub
@@ -786,8 +801,6 @@ static void PutPageWindowTilemap(u8 page)
     }
 }
 
-#define OW_BOX_X 8 + 16
-#define OW_BOX_Y 24 + 16
 static void PutPageWindowIcons(u8 page)
 {
     u8 i;
@@ -850,6 +863,13 @@ static void ClearPageWindowTilemap(u8 page)
     }
 }
 
+static void ClearSpriteData(u8 spriteId)
+{
+    DestroySprite(&gSprites[sMenuDataPtr->spriteIds[spriteId]]);
+    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[spriteId]);
+    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[spriteId]);
+}
+
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId)
 {
     AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, 0, lineSpacing, sMenuWindowFontColors[colorId], 0, string);
@@ -857,7 +877,12 @@ static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 line
 
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId)
 {
-    AddTextPrinterParameterized4(windowId, FONT_SMALL_NARROW, x, y, 0, lineSpacing, sMenuWindowFontColors[colorId], 0, string);
+    AddTextPrinterParameterized4(windowId, FONT_SMALL, x, y, 0, lineSpacing, sMenuWindowFontColors[colorId], 0, string);
+}
+
+static void PrintTextOnWindowNarrow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId)
+{
+    AddTextPrinterParameterized4(windowId, FONT_NARROW, x, y, 0, lineSpacing, sMenuWindowFontColors[colorId], 0, string);
 }
 
 static const u8 sText_MyMenu[] = _("My Menu");
@@ -1101,7 +1126,8 @@ static u8* LevelRangeByIndex(u8 selection)
 static u8* EncRateByIndex(u8 selection)
 {
     ConvertIntToDecimalStringN(gStringVar1, encRateLand[selection], STR_CONV_MODE_RIGHT_ALIGN, 2);
-    return gStringVar1;
+    StringExpandPlaceholders(gStringVar4, gText_Var1Percent);
+    return gStringVar4;
 }
 
 static u8* CatchRateBySpecies(u16 species)
