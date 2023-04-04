@@ -85,6 +85,8 @@ enum SpriteArrIds
 #define PALTAG_CURSOR_1 SPRITE_ARR_ID_HAND_CURSOR - 7
 #define PALTAG_CURSOR_2 SPRITE_ARR_ID_HAND_SHADOW - 7
 
+#define MAX_UNIQUE_POKEMON 12
+
 enum HandCursorTags
 {
     GFXTAG_CURSOR = 3000,
@@ -97,6 +99,37 @@ enum HandCursorAnim
     CURSOR_ANIM_STILL,
     CURSOR_ANIM_OPEN,
     CURSOR_ANIM_FIST,
+};
+
+struct WildPokemonData
+{
+    u16 species;
+    u8 types[2];
+    u16 abilities[2];
+    u8 baseHP;
+    u8 baseAttack;
+    u8 baseDefense;
+    u8 baseSpAttack;
+    u8 baseSpDefense;
+    u8 baseSpeed;
+    u8 baseBST;
+    u8 evYield_HP;
+    u8 evYield_Attack;
+    u8 evYield_Defense;
+    u8 evYield_SpAttack;
+    u8 evYield_SpDefense;
+    u8 evYield_Speed;
+    u8 catchRate;
+    u16 itemCommon;
+    u16 itemRare;
+};
+
+struct WildPokemonUnique
+{
+    u8 minLevel;
+    u8 maxLevel;
+    struct WildPokemonData wildMonData;
+    u8 encChance;
 };
 
 struct MenuResources
@@ -117,12 +150,13 @@ struct MenuResources
     u8 mode;
     struct Sprite *cursorSprite;
     struct Sprite *cursorShadowSprite;
+    struct WildPokemonUnique uniquePokemon[MAX_UNIQUE_POKEMON];
 };
 
 enum Pages
 {
     EV_PAGE_LAND,
-    EV_PAGE_FISHING,
+    EV_PAGE_FISH,
     EV_PAGE_WATER_ROCK,
     EV_PAGE_COUNT,
 };
@@ -212,7 +246,12 @@ static u8 *CatchRateBySpecies(u16 species);
 static u8 *AbilitiesBySpecies(u16 species, u8 slot);
 static u8 *BaseStatBySpecies(u16 species, u8 stat);
 static u8 *EVYieldBySpecies(u16 species, u8 stat);
+static u8 *BSTBySpecies(u16 species);
 static const struct WildPokemonInfo *GetWildMonInfo(void);
+static bool8 HasWildEncounter();
+static u8 GetUniqueEncounters(struct WildPokemonInfo);
+
+static void PrintDebug();
 
 //==========CONST=DATA==========//
 static const struct BgTemplate sMenuBgTemplates[] =
@@ -246,10 +285,10 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
         .bg = 0,
-        .tilemapLeft = 13,
-        .tilemapTop = 11,
+        .tilemapLeft = 21,
+        .tilemapTop = 10,
         .width = 3,
-        .height = 8,
+        .height = 9,
         .paletteNum = 15,
         .baseBlock = 1 + 4,
     },
@@ -261,7 +300,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 7,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24,
+        .baseBlock = 1 + 4 + 27,
     },
     [EV_DATA_WINDOW_BOX_LEVEL_CATCH]
     {
@@ -271,37 +310,37 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 5,
         .height = 4,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14,
+        .baseBlock = 1 + 4 + 27 + 14,
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
         .bg = 0,
-        .tilemapLeft = 16,
+        .tilemapLeft = 24,
         .tilemapTop = 10,
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14 + 20,
+        .baseBlock = 1 + 4 + 27 + 14 + 20,
     },
     [EV_DATA_WINDOW_BOX_EV_YIELD]
     {
         .bg = 0,
-        .tilemapLeft = 19,
+        .tilemapLeft = 27,
         .tilemapTop = 10,
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27,
     },
     [EV_DATA_WINDOW_BOX_ABILITIES]
     {
         .bg = 0,
-        .tilemapLeft = 22,
-        .tilemapTop = 13,
-        .width = 7,
-        .height = 6,
+        .tilemapLeft = 13,
+        .tilemapTop = 14,
+        .width = 8,
+        .height = 5,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27,
     },
     [EV_DATA_WINDOW_BOX_ENCRATE]
     {
@@ -311,7 +350,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27 + 42,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 40,
     },
     [EV_LABEL_WINDOW_BOX_OVERVIEW]
     {
@@ -321,7 +360,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 12,
         .height = 16,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 24 + 14 + 20 + 27 + 27 + 42 + 6,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 40 + 6,
     },
 }; 
 
@@ -482,29 +521,41 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 5:
+        PrintDebug();
+        gMain.state++;
+        if (!HasWildEncounter)
+            gMain.state = 12; 
+        break;
+    case 6:
         PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
-    case 6:
+    case 7:
         PutPageMonDataText(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
-    case 7:
+    case 8:
         PutPageWindowIcons(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
-    case 8:
+    case 9:
         PutPageWindowSprites(sMenuDataPtr->currPageIndex);
+        gMain.state++;
+        break;
+    case 10:
         CreateCursorSprites();
         gMain.state++;
         break;
-    case 9:
+    case 11:
         PutPageWindowText(sMenuDataPtr->currPageIndex);
+        gMain.state++;
+        break;
+    case 12:
         taskId = CreateTask(Task_MenuWaitFadeIn, 0);
         BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
         gMain.state++;
         break;
-    case 10:
+    case 13:
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gMain.state++;
         break;
@@ -689,6 +740,11 @@ static void ReloadAllPageData(void)
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]]);
 
     ClearPageWindowTilemap(sMenuDataPtr->currPageIndex);
+
+    PrintDebug();
+    if (!HasWildEncounter)
+        return;
+    
     PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
     PutPageWindowText(sMenuDataPtr->currPageIndex);
     PutPageMonDataText(sMenuDataPtr->currPageIndex);
@@ -708,6 +764,7 @@ static const u8 sText_DEF[]  = _("DEF");
 static const u8 sText_SATK[] = _("SAT");
 static const u8 sText_SDEF[] = _("SDF");
 static const u8 sText_SPD[]  = _("SPD");
+static const u8 sText_BST[] = _("BST");
 
 static const u8 sText_Base[] = _("Base");
 static const u8 sText_EVs[] = _("EVs");
@@ -724,11 +781,9 @@ static void PutPageWindowText(u8 page)
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 3, 32, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 3, 41, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 3, 50, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, sText_Base, 0, 4, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, sText_EVs, 0, 4, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, sText_Abilities, 0, 0, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_BST, 3, 59, 0, FONT_BLACK);
             break;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -750,27 +805,27 @@ static void PutPageMonDataText(u8 page)
             PrintTextOnWindowNarrow(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_BLACK);
             PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateBySpecies(species), 0, 12, 0, FONT_BLACK);
-            PrintTextOnWindow(EV_DATA_WINDOW_BOX_ENCRATE, EncRateByIndex(selection), 0, 0, 0, FONT_BLUE);
             // base stats
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_HP), 3, 13, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_ATK), 3, 22, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_DEF), 3, 31, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPATK), 3, 40, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPDEF), 3, 49, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPEED), 3, 58, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_HP), 3, 5, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_ATK), 3, 14, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_DEF), 3, 23, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPATK), 3, 32, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPDEF), 3, 41, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatBySpecies(species, STAT_SPEED), 3, 50, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BSTBySpecies(species), 3, 59, 0, FONT_BLACK);
             // ev yields
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_HP), 5, 13, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_ATK), 5, 22, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_DEF), 5, 31, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPATK), 5, 40, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPDEF), 5, 49, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPEED), 5, 58, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_HP), 5, 5, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_ATK), 5, 14, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_DEF), 5, 23, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPATK), 5, 32, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPDEF), 5, 41, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldBySpecies(species, STAT_SPEED), 5, 50, 0, FONT_BLACK);
             // abilities
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_1), 0, 16, 0, FONT_BLACK);
-            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 0, 25, 0, FONT_BLACK);
-            //PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_HIDDEN), 0, 34, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_1), 3, 12, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 3, 21, 0, FONT_BLACK);
+            PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesBySpecies(species, ABILITY_2), 3, 30, 0, FONT_BLACK);
             break; 
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -792,7 +847,7 @@ static void PutPageWindowTilemap(u8 page)
                 CopyWindowToVram(i, 3);
             }
             break;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -811,7 +866,7 @@ static void PutPageWindowIcons(u8 page)
             for (i = 0; i <= sMenuDataPtr->maxMonIndex; i++)
                 DrawMonIcon(LandMons->wildPokemon[i].species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y, i);
                 break;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -832,11 +887,11 @@ static void PutPageWindowSprites(u8 page)
     {
         case EV_PAGE_LAND:
             DrawMonSprite(species, 138, 57);
-            DrawItemSprites(itemCommon, COMMON, 188, 92, 0);
-            DrawItemSprites(itemRare, RARE, 212, 92, 0);
+            DrawItemSprites(itemCommon, COMMON, 124, 112, 0);
+            DrawItemSprites(itemRare, RARE, 156, 112, 0);
             DrawPokeballSprite(182, 68, 0);
             break;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -854,7 +909,7 @@ static void ClearPageWindowTilemap(u8 page)
             for (i = 0; i < EV_WINDOW_END; i++)
                 ClearWindowTilemap(i);
             break;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             //stub
             break;
         case EV_PAGE_WATER_ROCK:
@@ -1084,7 +1139,7 @@ static u8 GetMaxMonIndex(u8 page)
     {
         case EV_PAGE_LAND:
             return LAND_WILD_COUNT;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             return FISH_WILD_COUNT;
         case EV_PAGE_WATER_ROCK:
             return WATER_WILD_COUNT + ROCK_WILD_COUNT;
@@ -1168,6 +1223,19 @@ static u8 *BaseStatBySpecies(u16 species, u8 stat)
     return gStringVar1;
 }
 
+static u8 *BSTBySpecies(u16 species)
+{
+    u16 bst = gSpeciesInfo[species].baseHP
+            + gSpeciesInfo[species].baseAttack
+            + gSpeciesInfo[species].baseDefense
+            + gSpeciesInfo[species].baseSpAttack
+            + gSpeciesInfo[species].baseSpDefense
+            + gSpeciesInfo[species].baseSpeed;
+
+    ConvertIntToDecimalStringN(gStringVar1, bst, STR_CONV_MODE_RIGHT_ALIGN, 3);
+    return gStringVar1;
+}
+
 static u8 *EVYieldBySpecies(u16 species, u8 stat)
 {
     switch (stat)
@@ -1201,9 +1269,34 @@ static const struct WildPokemonInfo* GetWildMonInfo(void)
     {
         case EV_PAGE_LAND:
             return gWildMonHeaders[sMenuDataPtr->headerId].landMonsInfo;
-        case EV_PAGE_FISHING:
+        case EV_PAGE_FISH:
             return gWildMonHeaders[sMenuDataPtr->headerId].fishingMonsInfo;
         case EV_PAGE_WATER_ROCK:
             return gWildMonHeaders[sMenuDataPtr->headerId].rockSmashMonsInfo;
+    }
+}
+
+static bool8 HasWildEncounter()
+{
+    return (GetWildMonInfo != NULL); 
+}
+
+static const u8 string[] = _("on");
+static const u8 string2[] = _("off");
+static void PrintDebug()
+{
+    StringCopy(gStringVar1, string);
+    if (HasWildEncounter())
+        DebugPrintfLevel(MGBA_LOG_ERROR, "%S", string);
+    if (!HasWildEncounter())
+        DebugPrintfLevel(MGBA_LOG_ERROR, "%S", string2);
+}
+
+u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo) 
+{
+    u8 i, j;
+    for (i = 0; i < MAX_UNIQUE_POKEMON; i++)
+    {
+        
     }
 }
