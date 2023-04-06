@@ -1044,3 +1044,13 @@ static void Task_BlendPalettesGradually(u8 taskId)
         }
     }
 }
+
+void FillPalBufferWhite(void)
+{
+    CpuFastFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);
+}
+
+void FillPalBufferBlack(void)
+{
+    CpuFastFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE);
+}
