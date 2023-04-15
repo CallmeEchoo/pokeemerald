@@ -148,6 +148,8 @@ struct MenuResources
     u8 minMonIndex;
     u8 maxMonIndex;
     u8 mode;
+    u8 panelY;
+    bool8 panelIsOpen;
     struct Sprite *cursorSprite;
     struct Sprite *cursorShadowSprite;
     struct WildPokemonUnique uniquePokemon[MAX_UNIQUE_POKEMON];
@@ -221,6 +223,7 @@ static const u8 encRateRock[ROCK_WILD_COUNT]  = {60,30,5,4,1};
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
 static EWRAM_DATA u8 *sBg1TilemapBuffer = NULL;
+static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
 
 //==========STATIC=DEFINES==========//
 static void Menu_RunSetup(void);
@@ -235,6 +238,7 @@ static void Task_MenuWaitFadeIn(u8 taskId);
 static void Task_MenuMain(u8 taskId);
 static void Task_MenuTurnOff(u8 taskId);
 static void Task_BeginPageChange(u8 taskId);
+static void Task_MenuPanelSlide(u8 taskid);
 
 static void ClearPageWindowTilemap(u8 page);
 static void ClearSpriteData(u8 spriteId);
@@ -281,13 +285,19 @@ static const struct BgTemplate sMenuBgTemplates[] =
         .bg = 0,    // windows, etc
         .charBaseIndex = 0,
         .mapBaseIndex = 31,
-        .priority = 0,
+        .priority = 1,
     }, 
     {
         .bg = 1,    // this bg loads the UI tilemap
         .charBaseIndex = 3,
         .mapBaseIndex = 28,
-        .priority = 1,
+        .priority = 2,
+    },
+    {
+        .bg = 2,
+        .charBaseIndex = 2,
+        .mapBaseIndex = 27,
+        .priority = 0,
     }
 };
 
@@ -335,7 +345,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
-        .bg = 0,
+        .bg = 2,
         .tilemapLeft = 24,
         .tilemapTop = 10,
         .width = 3,
@@ -418,6 +428,7 @@ static const u32 sMenuTilemapLand[] = INCBIN_U32("graphics/ui_menu/tilemapLand.b
 static const u32 sMenuTilemapFish[] = INCBIN_U32("graphics/ui_menu/tilemapFish.bin.lz");
 static const u32 sMenuTilemapWater[] = INCBIN_U32("graphics/ui_menu/tilemapWater.bin.lz");
 static const u32 sMenuTilemapRock[] = INCBIN_U32("graphics/ui_menu/tilemapRock.bin.lz");
+static const u32 sMenuSlidingPanel[] = INCBIN_U32("graphics/ui_menu/tilemapSlidingPanel.bin.lz");
 static const u16 sMenuPaletteRed[] = INCBIN_U16("graphics/ui_menu/paletteRed.gbapal");
 static const u16 sMenuPaletteBlue[] = INCBIN_U16("graphics/ui_menu/paletteBlue.gbapal");
 static const u16 sMenuPaletteLightBlue[] = INCBIN_U16("graphics/ui_menu/paletteLightBlue.gbapal");
@@ -445,6 +456,13 @@ static const u8 sMenuWindowFontColors[][3] =
 };
 
 static const u8 dash[] = _(" - ");
+
+//=========ANIMS==============//
+
+#define DEFAULT_ANIM 0
+#define SELECTED_ANIM 0
+
+
 
 //==========FUNCTIONS==========//
 // UI loader template
@@ -474,6 +492,8 @@ void Menu_Init(MainCallback callback)
 
     sMenuDataPtr->headerId = GetCurrentMapWildMonHeaderId();
     sMenuDataPtr->mode = EV_MODE_DEFAULT;
+    sMenuDataPtr->panelY = 0;
+    sMenuDataPtr->panelIsOpen = FALSE;
     sMenuDataPtr->minPageIndex = EV_PAGE_LAND;
     sMenuDataPtr->maxPageIndex = EV_PAGE_ROCK;
     sMenuDataPtr->currPageIndex = EV_PAGE_LAND;
@@ -511,6 +531,7 @@ static void Menu_VBlankCB(void)
 static bool8 Menu_DoGfxSetup(void)
 {
     u8 taskId;
+    DebugPrintfLevel(MGBA_LOG_ERROR, "state: %d", gMain.state);
     switch (gMain.state)
     {
     case 0:
@@ -549,14 +570,22 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 5:
-        PrintDebug();
-        gMain.state++;
-        if (!HasWildEncounter)
-            gMain.state = 12; 
-        break;
-    case 6:
         PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
         gMain.state++;
+        break;
+    case 6:
+        DebugPrintfLevel(MGBA_LOG_ERROR, "header: %d", gWildMonHeaders[sMenuDataPtr->headerId]);
+        DebugPrintfLevel(MGBA_LOG_ERROR, "Group: %d", gWildMonHeaders[sMenuDataPtr->headerId].mapGroup);
+        DebugPrintfLevel(MGBA_LOG_ERROR, "Num: %d", gWildMonHeaders[sMenuDataPtr->headerId].mapNum);
+        DebugPrintfLevel(MGBA_LOG_ERROR, "enc: %d", HasWildEncounter());
+        if (HasWildEncounter())
+        {
+            gMain.state++;
+        }
+        else
+        {
+            gMain.state = 12;
+        }
         break;
     case 7:
         PutPageMonDataText(sMenuDataPtr->currPageIndex);
@@ -571,11 +600,11 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 10:
-        CreateCursorSprites();
+        PutPageWindowText(sMenuDataPtr->currPageIndex);
         gMain.state++;
         break;
     case 11:
-        PutPageWindowText(sMenuDataPtr->currPageIndex);
+        CreateCursorSprites();
         gMain.state++;
         break;
     case 12:
@@ -605,6 +634,7 @@ static void Menu_FreeResources(void)
 {
     try_free(sMenuDataPtr);
     try_free(sBg1TilemapBuffer);
+    try_free(sBg2TilemapBuffer);
     FreeAllWindowBuffers();
 }
 
@@ -633,14 +663,21 @@ static bool8 Menu_InitBgs(void)
     sBg1TilemapBuffer = Alloc(0x800);
     if (sBg1TilemapBuffer == NULL)
         return FALSE;
+    sBg2TilemapBuffer = Alloc(0x800);
+    if (sBg2TilemapBuffer == NULL)
+        return FALSE;
     
     memset(sBg1TilemapBuffer, 0, 0x800);
+    memset(sBg2TilemapBuffer, 0, 0x800);
     ResetBgsAndClearDma3BusyFlags(0);
     InitBgsFromTemplates(0, sMenuBgTemplates, NELEMS(sMenuBgTemplates));
     SetBgTilemapBuffer(1, sBg1TilemapBuffer);
+    SetBgTilemapBuffer(2, sBg2TilemapBuffer);
     ScheduleBgCopyTilemapToVram(1);
+    ScheduleBgCopyTilemapToVram(2);
     ShowBg(0);
     ShowBg(1);
+    ShowBg(2);
     return TRUE;
 }
 
@@ -654,6 +691,7 @@ static void FreeResourcesForPageChange(void)
 static bool8 Menu_CreateBgs()
 {
     try_free(sBg1TilemapBuffer);
+    try_free(sBg2TilemapBuffer);
     return Menu_InitBgs();
 }
 
@@ -670,6 +708,7 @@ static bool8 Menu_LoadGraphics(u8 page)
                 case EV_PAGE_WATER:
                 case EV_PAGE_ROCK:
                     DecompressAndCopyTileDataToVram(1, sMenuTiles, 0, 0, 0);
+                    DecompressAndCopyTileDataToVram(2, sMenuTiles, 0, 0, 0);
                     break;
             }
         sMenuDataPtr->gfxLoadState++;
@@ -692,6 +731,7 @@ static bool8 Menu_LoadGraphics(u8 page)
                     LZDecompressWram(sMenuTilemapRock, sBg1TilemapBuffer);
                     break;
             }
+            LZDecompressWram(sMenuSlidingPanel, sBg2TilemapBuffer);
             sMenuDataPtr->gfxLoadState++;
         }
         break;
@@ -753,6 +793,12 @@ static void Task_MenuMain(u8 taskId)
             PlaySE(SE_PC_OFF);
             BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
             gTasks[taskId].func = Task_MenuTurnOff;
+        }
+        if (JOY_NEW(A_BUTTON))
+        {
+            sMenuDataPtr->mode ^= 1;
+            PlaySE(SE_SELECT);
+            gTasks[taskId].func = Task_MenuPanelSlide;
         }
         if (JOY_NEW(DPAD_RIGHT))
         {
@@ -838,13 +884,13 @@ static void Menu_BeginPageChange(u8 taskId)
                 break;
         }
         ResetWildEncounterData();
-        DebugPrintfLevel(MGBA_LOG_ERROR, "print 1");
-        PrintDebug();
+        //DebugPrintfLevel(MGBA_LOG_ERROR, "print 1");
+        //PrintDebug();
         InitWildEncounterData();
         InitWildMonData(sMenuDataPtr->uniquePokemon);
         ReloadAllPageData();
-        DebugPrintfLevel(MGBA_LOG_ERROR, "print 2");
-        PrintDebug();
+        //DebugPrintfLevel(MGBA_LOG_ERROR, "print 2");
+        //PrintDebug();
         FillPalBufferBlack();
         BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].func = Task_MenuMain;
@@ -869,6 +915,39 @@ static void Task_MenuTurnOff(u8 taskId)
     }
 }
 
+static void Task_MenuPanelSlide(u8 taskId)
+{
+    #define PANEL_MAX_Y 95
+
+    SetGpuReg(REG_OFFSET_BG2VOFS, sMenuDataPtr->panelY);
+    
+    if (sMenuDataPtr->panelIsOpen)
+    {
+        if (sMenuDataPtr->panelY > 0)
+        {
+            sMenuDataPtr->panelY -= 5;
+        }
+        else if (sMenuDataPtr->panelY == 0)
+        {
+            sMenuDataPtr->panelIsOpen = FALSE;
+            gTasks[taskId].func = Task_MenuMain;
+        }
+    }
+    else
+    {
+        if (sMenuDataPtr->panelY < PANEL_MAX_Y)
+        {
+            sMenuDataPtr->panelY += 5;
+        }
+        else if (sMenuDataPtr->panelY == PANEL_MAX_Y)
+        {
+            sMenuDataPtr->panelIsOpen = TRUE;
+            gTasks[taskId].func = Task_MenuMain;
+        }
+    }
+    #undef PANEL_MAX_Y
+}
+
 static void ReloadPageData(void)
 {
 
@@ -881,7 +960,8 @@ static void ReloadPageData(void)
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]]);
 
     ClearPageWindowTilemap(sMenuDataPtr->currPageIndex);
-    if (!HasWildEncounter)
+    DebugPrintfLevel(MGBA_LOG_ERROR, "%d", HasWildEncounter());
+    if (!HasWildEncounter())
         return;
 
     PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
@@ -894,8 +974,8 @@ static void ReloadAllPageData(void)
 {
     FreeResourcesForPageChange();
     Menu_InitWindows();
-    
-    if (!HasWildEncounter)
+    DebugPrintfLevel(MGBA_LOG_ERROR, "%d", HasWildEncounter());
+    if (!HasWildEncounter())
         return;
 
     PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
@@ -1376,6 +1456,13 @@ static const struct WildPokemonInfo* GetWildMonInfo(void)
     }
 }
 
+static bool8 HasWildEncounter()
+{
+    if (gWildMonHeaders[sMenuDataPtr->headerId].mapGroup < MAP_GROUPS_COUNT)
+        return (GetWildMonInfo() != NULL);
+    return FALSE;
+}
+
 static const u8 *EncRateByPage(u8 page)
 {
     switch (page)
@@ -1389,11 +1476,6 @@ static const u8 *EncRateByPage(u8 page)
         case EV_PAGE_ROCK:
             return encRateRock;
     }
-}
-
-static bool8 HasWildEncounter()
-{
-    return (GetWildMonInfo != NULL); 
 }
 
 static void PrintDebug()
@@ -1415,7 +1497,7 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
     const u8 *encRate = EncRateByPage(sMenuDataPtr->currPageIndex);
     for (i = 0; i < MAX_UNIQUE_POKEMON; i++)
     {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "encR:%d", encRate[i]);
+        //DebugPrintfLevel(MGBA_LOG_ERROR, "encR:%d", encRate[i]);
     }
     const struct WildPokemon *wildMons = wildPokemonInfo->wildPokemon;
     struct WildPokemonUnique *uniqueMons = sMenuDataPtr->uniquePokemon;
@@ -1425,7 +1507,7 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
 
     for (i = 0; i < maxMonIndex; i++)
     {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "b:%d", uniqueCount);
+        //PrintfLevel(MGBA_LOG_ERROR, "b:%d", uniqueCount);
         for (j = 0; j < MAX_UNIQUE_POKEMON; j++)
         {
             if (uniqueMons[j].wildMonData.species == wildMons[i].species)
@@ -1436,8 +1518,8 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
                     uniqueMons[j].maxLevel = wildMons[i].maxLevel;
                 if (wildMons[i].minLevel < uniqueMons[j].minLevel)
                     uniqueMons[j].minLevel = wildMons[i].minLevel;
-                DebugPrintfLevel(MGBA_LOG_ERROR, "isDupe:%S", gSpeciesNames[wildMons[i].species]);
-                DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", uniqueMons[j].encChance, encRate[i]);
+                //DebugPrintfLevel(MGBA_LOG_ERROR, "isDupe:%S", gSpeciesNames[wildMons[i].species]);
+                //DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", uniqueMons[j].encChance, encRate[i]);
             }
 
         }
@@ -1448,8 +1530,8 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
             uniqueMons[uniqueCount].minLevel = wildMons[i].minLevel;
             uniqueMons[uniqueCount].encChance = encRate[i];
             uniqueCount++;
-            DebugPrintfLevel(MGBA_LOG_ERROR, "isNotDupe:%S", gSpeciesNames[wildMons[i].species]);
-            DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", wildMons[i], encRate[i]);
+            //DebugPrintfLevel(MGBA_LOG_ERROR, "isNotDupe:%S", gSpeciesNames[wildMons[i].species]);
+            //DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", wildMons[i], encRate[i]);
         }
         isDuplicate = FALSE;
     }
