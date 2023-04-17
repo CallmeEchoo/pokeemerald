@@ -62,9 +62,6 @@
 #define ABILITY_2 1
 #define ABILITY_HIDDEN 2
 
-#define TAG_MOVE_TYPES 5000
-#define TAG_ITEM_ICON 5001 // 5002 for rare
-
 #define MAX_MON_COUNT 12
 #define TYPE_ICON_SPRITE_COUNT 2
 
@@ -79,18 +76,27 @@ enum SpriteArrIds
     SPRITE_ARR_ID_MON_TYPE_2,
     SPRITE_ARR_ID_HAND_CURSOR,
     SPRITE_ARR_ID_HAND_SHADOW,
+    SPRITE_ARR_ID_BOX_LEFT,
+    SPRITE_ARR_ID_BOX_RIGHT,
     SPRITE_ARR_ID_COUNT,
 };
 
 #define PALTAG_CURSOR_1 SPRITE_ARR_ID_HAND_CURSOR - 7
 #define PALTAG_CURSOR_2 SPRITE_ARR_ID_HAND_SHADOW - 7
+#define PALTAG_MOVE_TYPES 5000
+#define PALTAG_ITEM_ICON 5001 // 5002 for rare
+#define PALTAG_SLIDING_BOX 5003
 
 #define MAX_UNIQUE_POKEMON 12
 
-enum HandCursorTags
+enum SpriteGFXTags
 {
     GFXTAG_CURSOR = 3000,
     GFXTAG_CURSOR_SHADOW,
+    GFXTAG_ITEM_ICON_COMMON,
+    GFXTAG_ITEM_ICON_RARE,
+    GFXTAG_BOX_LEFT,
+    GFXTAG_BOX_RIGHT,
 };
 
 enum HandCursorAnim
@@ -152,8 +158,15 @@ struct MenuResources
     bool8 panelIsOpen;
     struct Sprite *cursorSprite;
     struct Sprite *cursorShadowSprite;
+    struct Sprite *slidingBoxSpriteLeft;
+    struct Sprite *slidingBoxSpriteRight;
     struct WildPokemonUnique uniquePokemon[MAX_UNIQUE_POKEMON];
     u8 uniquePokemonCount;
+    u8 verticalOffset;
+    s8 horizontalOffset;
+    bool8 bgDirection; // 0 left, 1 right
+    bool8 bgToggle;
+
 };
 
 enum Pages
@@ -254,6 +267,7 @@ static void ReloadAllPageData(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowNarrow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
+static void CreateSlidingBoxSpritesAt(u8 x, u8 y);
 static void CreateCursorSprites(void);
 static void CursorUpdatePos(void);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
@@ -277,6 +291,7 @@ static void InitWildEncounterData();
 static void ResetWildEncounterData();
 static void InitWildMonData(struct WildPokemonUnique *uniqueMons);
 static void FreeResourcesForPageChange(void);
+static void MenuBgSlide(void);
 
 static void PrintDebug();
 
@@ -323,9 +338,9 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
-        .bg = 1,
-        .tilemapLeft = 21,
-        .tilemapTop = 10,
+        .bg = 0,
+        .tilemapLeft = 13,
+        .tilemapTop = 21,
         .width = 3,
         .height = 9,
         .paletteNum = 15,
@@ -353,9 +368,9 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
-        .bg = 1,
-        .tilemapLeft = 24,
-        .tilemapTop = 10,
+        .bg = 0,
+        .tilemapLeft = 16,
+        .tilemapTop = 21,
         .width = 3,
         .height = 9,
         .paletteNum = 15,
@@ -363,9 +378,9 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_EV_YIELD]
     {
-        .bg = 1,
-        .tilemapLeft = 27,
-        .tilemapTop = 10,
+        .bg = 0,
+        .tilemapLeft = 19,
+        .tilemapTop = 21,
         .width = 3,
         .height = 9,
         .paletteNum = 15,
@@ -375,9 +390,9 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     {
         .bg = 1,
         .tilemapLeft = 13,
-        .tilemapTop = 14,
+        .tilemapTop = 11,
         .width = 8,
-        .height = 5,
+        .height = 7,
         .paletteNum = 15,
         .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27,
     },
@@ -389,7 +404,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 40,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 56,
     },
     [EV_LABEL_WINDOW_BOX_OVERVIEW]
     {
@@ -399,7 +414,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 12,
         .height = 16,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 40 + 6,
+        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 56 + 6,
     },
 }; 
 
@@ -420,6 +435,24 @@ static const struct OamData sOamData_FrontPic =
     .affineParam = 0,
 };
 
+static const struct OamData sOamData_SlidingBox = 
+{
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_OFF,
+    .objMode = ST_OAM_OBJ_NORMAL,
+    .mosaic = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(64x64),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(64x64),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+
 static const struct SpriteTemplate sSpriteTemplate_FrontPic = 
 {
     .tileTag = TAG_NONE,
@@ -431,12 +464,28 @@ static const struct SpriteTemplate sSpriteTemplate_FrontPic =
     .callback = SpriteCallbackDummy,
 };
 
+static const struct SpriteTemplate sSpriteTemplate_SlidingBox = 
+{
+    .tileTag = TAG_NONE,
+    .paletteTag = PALTAG_SLIDING_BOX,
+    .oam = &sOamData_SlidingBox,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
 static const u32 sMenuTiles[] = INCBIN_U32("graphics/ui_menu/tiles.4bpp.lz");
-static const u32 sMenuTilemapLand[] = INCBIN_U32("graphics/ui_menu/tilemapLand.bin.lz");
+static const u32 sMenuTilesUI[] = INCBIN_U32("graphics/ui_menu/tilesUI.4bpp.lz");
+static const u32 sMenuTilesBG[] = INCBIN_U32("graphics/ui_menu/tilesBG.4bpp.lz");
+
+static const u32 sMenuTilemapUILand[] = INCBIN_U32("graphics/ui_menu/tilemapUILand.bin.lz");
 static const u32 sMenuTilemapFish[] = INCBIN_U32("graphics/ui_menu/tilemapFish.bin.lz");
 static const u32 sMenuTilemapWater[] = INCBIN_U32("graphics/ui_menu/tilemapWater.bin.lz");
 static const u32 sMenuTilemapRock[] = INCBIN_U32("graphics/ui_menu/tilemapRock.bin.lz");
-static const u32 sMenuSlidingPanel[] = INCBIN_U32("graphics/ui_menu/tilemapSlidingPanel.bin.lz");
+static const u32 sMenuTilemapPanel[] = INCBIN_U32("graphics/ui_menu/tilemapSlidingPanel.bin.lz");
+static const u32 sMenuTilemapBG[] = INCBIN_U32("graphics/ui_menu/tilemapBG.bin.lz");
+
 static const u16 sMenuPaletteRed[] = INCBIN_U16("graphics/ui_menu/paletteRed.gbapal");
 static const u16 sMenuPaletteBlue[] = INCBIN_U16("graphics/ui_menu/paletteBlue.gbapal");
 static const u16 sMenuPaletteLightBlue[] = INCBIN_U16("graphics/ui_menu/paletteLightBlue.gbapal");
@@ -446,6 +495,9 @@ static const u16 sMenuPaletteOrange[] = INCBIN_U16("graphics/ui_menu/paletteOran
 static const u16 sHandCursor_Pal[] = INCBIN_U16("graphics/pokemon_storage/hand_cursor.gbapal");
 static const u8 sHandCursor_Gfx[] = INCBIN_U8("graphics/pokemon_storage/hand_cursor.4bpp");
 static const u8 sHandCursorShadow_Gfx[] = INCBIN_U8("graphics/pokemon_storage/hand_cursor_shadow.4bpp");
+
+static const u32 sSlidingBoxLeft[] = INCBIN_U32("graphics/ui_menu/SlidingBoxLeft.4bpp.lz");
+static const u32 sSlidingBoxRight[] = INCBIN_U32("graphics/ui_menu/SlidingBoxRight.4bpp.lz");
 
 enum Colors
 {
@@ -464,13 +516,6 @@ static const u8 sMenuWindowFontColors[][3] =
 };
 
 static const u8 dash[] = _(" - ");
-
-//=========ANIMS==============//
-
-#define DEFAULT_ANIM 0
-#define SELECTED_ANIM 0
-
-
 
 //==========FUNCTIONS==========//
 // UI loader template
@@ -506,6 +551,10 @@ void Menu_Init(MainCallback callback)
     sMenuDataPtr->maxPageIndex = EV_PAGE_ROCK;
     sMenuDataPtr->currPageIndex = EV_PAGE_LAND;
     sMenuDataPtr->minMonIndex = 0;
+    sMenuDataPtr->verticalOffset = 0;
+    sMenuDataPtr->horizontalOffset = 0;
+    sMenuDataPtr->bgDirection = 0;
+    sMenuDataPtr->bgToggle = 0;
     InitWildEncounterData();
     InitWildMonData(sMenuDataPtr->uniquePokemon);
     SetMainCallback2(Menu_RunSetup);
@@ -613,6 +662,7 @@ static bool8 Menu_DoGfxSetup(void)
         break;
     case 11:
         CreateCursorSprites();
+        CreateSlidingBoxSpritesAt(136, 200);
         gMain.state++;
         break;
     case 12:
@@ -732,8 +782,8 @@ static bool8 Menu_LoadGraphics(u8 page)
                 case EV_PAGE_FISH:
                 case EV_PAGE_WATER:
                 case EV_PAGE_ROCK:
-                    DecompressAndCopyTileDataToVram(0, sMenuTiles, 0, 0, 0);
-                    DecompressAndCopyTileDataToVram(2, sMenuTiles, 0, 0, 0);
+                    DecompressAndCopyTileDataToVram(2, sMenuTilesUI, 0, 0, 0);
+                    DecompressAndCopyTileDataToVram(3, sMenuTilesBG, 0, 0, 0);
                     break;
             }
         sMenuDataPtr->gfxLoadState++;
@@ -744,7 +794,7 @@ static bool8 Menu_LoadGraphics(u8 page)
             switch (page)
             {
                 case EV_PAGE_LAND:
-                    LZDecompressWram(sMenuTilemapLand, sBg2TilemapBuffer);
+                    LZDecompressWram(sMenuTilemapUILand, sBg2TilemapBuffer);
                     break;
                 case EV_PAGE_FISH:
                     LZDecompressWram(sMenuTilemapFish, sBg2TilemapBuffer);
@@ -756,7 +806,7 @@ static bool8 Menu_LoadGraphics(u8 page)
                     LZDecompressWram(sMenuTilemapRock, sBg2TilemapBuffer);
                     break;
             }
-            LZDecompressWram(sMenuSlidingPanel, sBg0TilemapBuffer);
+            LZDecompressWram(sMenuTilemapBG, sBg3TilemapBuffer);
             sMenuDataPtr->gfxLoadState++;
         }
         break;
@@ -811,6 +861,7 @@ static void Task_MenuWaitFadeIn(u8 taskId)
 /* This is the meat of the UI. This is where you wait for player inputs and can branch to other tasks accordingly */
 static void Task_MenuMain(u8 taskId)
 {
+    MenuBgSlide();
     if (!gPaletteFade.active)
     {
         if (JOY_NEW(B_BUTTON))
@@ -942,15 +993,16 @@ static void Task_MenuTurnOff(u8 taskId)
 
 static void Task_MenuPanelSlide(u8 taskId)
 {
-    #define PANEL_MAX_Y 95
-
+    MenuBgSlide();
+    #define PANEL_MAX_Y 80
     SetGpuReg(REG_OFFSET_BG0VOFS, sMenuDataPtr->panelY);
-    
     if (sMenuDataPtr->panelIsOpen)
     {
         if (sMenuDataPtr->panelY > 0)
         {
             sMenuDataPtr->panelY -= 5;
+            sMenuDataPtr->slidingBoxSpriteLeft->y += 5;
+            //sMenuDataPtr->slidingBoxSpriteRight->y += 5;
         }
         else if (sMenuDataPtr->panelY == 0)
         {
@@ -963,6 +1015,8 @@ static void Task_MenuPanelSlide(u8 taskId)
         if (sMenuDataPtr->panelY < PANEL_MAX_Y)
         {
             sMenuDataPtr->panelY += 5;
+            sMenuDataPtr->slidingBoxSpriteLeft->y -= 5;
+            //sMenuDataPtr->slidingBoxSpriteRight->y -= 5;
         }
         else if (sMenuDataPtr->panelY == PANEL_MAX_Y)
         {
@@ -971,6 +1025,26 @@ static void Task_MenuPanelSlide(u8 taskId)
         }
     }
     #undef PANEL_MAX_Y
+}
+
+static void MenuBgSlide(void)
+{
+    SetGpuReg(REG_OFFSET_BG3VOFS, sMenuDataPtr->verticalOffset);
+    SetGpuReg(REG_OFFSET_BG3HOFS, sMenuDataPtr->horizontalOffset);
+    if (sMenuDataPtr->bgToggle)
+    {
+        sMenuDataPtr->verticalOffset++;
+        if (sMenuDataPtr->horizontalOffset == -20)
+            sMenuDataPtr->bgDirection = 0;
+        else if (sMenuDataPtr->horizontalOffset == 20)
+            sMenuDataPtr->bgDirection = 1;
+        
+        if (sMenuDataPtr->bgDirection == 0)
+            sMenuDataPtr->horizontalOffset++;
+        else 
+            sMenuDataPtr->horizontalOffset--;
+    }
+    sMenuDataPtr->bgToggle ^= 1;
 }
 
 static void ReloadPageData(void)
@@ -1032,13 +1106,14 @@ static const u8 sText_EVs[] = _("EVs");
 static void PutPageWindowText(u8 page)
 {
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_BLACK);
+
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 3, 5, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 3, 14, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_DEF, 3, 23, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SATK, 3, 32, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SDEF, 3, 41, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_SPD, 3, 50, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_BST, 3, 59, 0, FONT_BLACK);
+    //PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_BST, 3, 59, 0, FONT_BLACK);
 }
 
 #define OW_BOX_X 8 + 16
@@ -1058,7 +1133,7 @@ static void PutPageMonDataText(u8 page)
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_SPATK), 3, 32, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_SPDEF), 3, 41, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_SPEED), 3, 50, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BSTByIndex(selection), 3, 59, 0, FONT_BLACK);
+    //PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BSTByIndex(selection), 3, 59, 0, FONT_BLACK);
     // ev yields
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldByIndex(selection, STAT_HP), 5, 5, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldByIndex(selection, STAT_ATK), 5, 14, 0, FONT_BLACK);
@@ -1067,10 +1142,9 @@ static void PutPageMonDataText(u8 page)
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldByIndex(selection, STAT_SPDEF), 5, 41, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldByIndex(selection, STAT_SPEED), 5, 50, 0, FONT_BLACK);
     // abilities
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, EncRateByIndex(selection), 3, 12, 0, FONT_BLACK);
-    //PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_1), 3, 12, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 21, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 30, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_1), 3, 6, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 15, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 24, 0, FONT_BLACK);
 }
 
 static void PutPageWindowTilemap(u8 page)
@@ -1101,8 +1175,8 @@ static void PutPageWindowSprites(u8 page)
     u16 itemRare = sMenuDataPtr->uniquePokemon[selection].wildMonData.itemRare;
 
     DrawMonSprite(species, 138, 57);
-    DrawItemSprites(itemCommon, COMMON, 124, 112, 0);
-    DrawItemSprites(itemRare, RARE, 156, 112, 0);
+    DrawItemSprites(itemCommon, COMMON, 192, 115, 1);
+    DrawItemSprites(itemRare, RARE, 224, 115, 1);
     DrawPokeballSprite(182, 68, 0);
 }
 
@@ -1173,6 +1247,34 @@ static void SpriteCB_CursorShadow(struct Sprite *sprite)
 {
     sprite->x = sMenuDataPtr->cursorSprite->x;
     sprite->y = sMenuDataPtr->cursorSprite->y + 20;
+}
+
+static void CreateSlidingBoxSpritesAt(u8 x, u8 y)
+{
+    static const struct CompressedSpriteSheet sheets[2] = 
+    {
+        {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT},
+        {sSlidingBoxRight, 64*64/2, GFXTAG_BOX_RIGHT},
+    };
+    static const struct SpritePalette pal = {sMenuPaletteLime, PALTAG_SLIDING_BOX};
+    struct SpriteTemplate sSpriteTemplate_BoxLeft = sSpriteTemplate_SlidingBox; 
+    struct SpriteTemplate sSpriteTemplate_BoxRight = sSpriteTemplate_SlidingBox; 
+    
+    LoadSpritePalette(&pal);
+    LoadCompressedSpriteSheet(&sheets[0]);
+    LoadCompressedSpriteSheet(&sheets[1]);
+
+    sSpriteTemplate_BoxLeft.tileTag = sheets[0].tag;
+    sSpriteTemplate_BoxRight.tileTag = sheets[1].tag;
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_BOX_LEFT] = pal.tag;
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_BOX_RIGHT] = pal.tag;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_BOX_LEFT] = sheets[0].tag;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_BOX_RIGHT] = sheets[1].tag;
+
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_LEFT] = CreateSprite(&sSpriteTemplate_BoxLeft, x, y, 0);
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_RIGHT] = CreateSprite(&sSpriteTemplate_BoxRight, x+64, y, 0);
+    sMenuDataPtr->slidingBoxSpriteLeft = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_LEFT]];
+    sMenuDataPtr->slidingBoxSpriteRight = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_RIGHT]];
 }
 
 static void CreateCursorSprites(void)
@@ -1279,6 +1381,7 @@ static void CreateCursorSprites(void)
     if (sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_SHADOW] != MAX_SPRITES)
     {
         sMenuDataPtr->cursorShadowSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_HAND_SHADOW]];
+        sMenuDataPtr->cursorShadowSprite->oam.paletteNum = PALTAG_CURSOR_1;
         sMenuDataPtr->cursorShadowSprite->oam.priority = 1;
     }
     else
@@ -1310,15 +1413,15 @@ static void DrawMonSprite(u16 species, u8 x, u8 y)
 
 static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
 {
-    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity] = AddItemIconSpriteAt(TAG_ITEM_ICON + rarity, TAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity] = AddItemIconSpriteAt(GFXTAG_ITEM_ICON_COMMON + rarity, PALTAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
     if (!rarity)
     {
-        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON] = TAG_ITEM_ICON + rarity;
-        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON] = TAG_ITEM_ICON + rarity;
+        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON] = PALTAG_ITEM_ICON + rarity;
+        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON] = GFXTAG_ITEM_ICON_COMMON;
     } else 
     {
-        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE] = TAG_ITEM_ICON + rarity;
-        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE] = TAG_ITEM_ICON + rarity;
+        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE] = PALTAG_ITEM_ICON + rarity;
+        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE] = GFXTAG_ITEM_ICON_RARE;
     }
 }
 
