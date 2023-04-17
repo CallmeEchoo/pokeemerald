@@ -1190,8 +1190,8 @@ static void ClearPageWindowTilemap(u8 page)
 static void ClearSpriteData(u8 spriteId)
 {
     DestroySprite(&gSprites[sMenuDataPtr->spriteIds[spriteId]]);
-    FreeSpriteTilesByTag(sMenuDataPtr->paletteTag[spriteId]);
-    FreeSpritePaletteByTag(sMenuDataPtr->tileTag[spriteId]);
+    FreeSpriteTilesByTag(sMenuDataPtr->tileTag[spriteId]);
+    FreeSpritePaletteByTag(sMenuDataPtr->paletteTag[spriteId]);
 }
 
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId)
