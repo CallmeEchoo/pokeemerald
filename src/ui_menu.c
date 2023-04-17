@@ -222,8 +222,10 @@ static const u8 encRateRock[ROCK_WILD_COUNT]  = {60,30,5,4,1};
 
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
+static EWRAM_DATA u8 *sBg0TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg1TilemapBuffer = NULL;
 static EWRAM_DATA u8 *sBg2TilemapBuffer = NULL;
+static EWRAM_DATA u8 *sBg3TilemapBuffer = NULL;
 
 //==========STATIC=DEFINES==========//
 static void Menu_RunSetup(void);
@@ -282,22 +284,28 @@ static void PrintDebug();
 static const struct BgTemplate sMenuBgTemplates[] =
 {
     {
-        .bg = 0,    // windows, etc
+        .bg = 0,    // sliding panels + text
         .charBaseIndex = 0,
         .mapBaseIndex = 31,
-        .priority = 1,
+        .priority = 0,
     }, 
     {
-        .bg = 1,    // this bg loads the UI tilemap
-        .charBaseIndex = 3,
-        .mapBaseIndex = 28,
+        .bg = 1,    // windows etc
+        .charBaseIndex = 1,
+        .mapBaseIndex = 29,
+        .priority = 1,
+    },
+    {
+        .bg = 2,    // ui tilemap
+        .charBaseIndex = 2,
+        .mapBaseIndex = 27,
         .priority = 2,
     },
     {
-        .bg = 2,
-        .charBaseIndex = 2,
-        .mapBaseIndex = 27,
-        .priority = 0,
+        .bg = 3,    // bg tilemap
+        .charBaseIndex = 3,
+        .mapBaseIndex = 25,
+        .priority = 3,
     }
 };
 
@@ -305,7 +313,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
 {
     [EV_LABEL_WINDOW_BOX_LEVEL] = 
     {
-        .bg = 0,            // which bg to print text on
+        .bg = 1,            // which bg to print text on
         .tilemapLeft = 22,   // position from left (per 8 pixels)
         .tilemapTop = 6,    // position from top (per 8 pixels)
         .width = 2,        // width (per 8 pixels)
@@ -315,7 +323,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 21,
         .tilemapTop = 10,
         .width = 3,
@@ -325,7 +333,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_SPECIES] = 
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 22,
         .tilemapTop = 3,
         .width = 7,
@@ -335,7 +343,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_LEVEL_CATCH]
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 24,
         .tilemapTop = 6,
         .width = 5,
@@ -345,7 +353,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
-        .bg = 2,
+        .bg = 1,
         .tilemapLeft = 24,
         .tilemapTop = 10,
         .width = 3,
@@ -355,7 +363,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_EV_YIELD]
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 27,
         .tilemapTop = 10,
         .width = 3,
@@ -365,7 +373,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_ABILITIES]
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 13,
         .tilemapTop = 14,
         .width = 8,
@@ -375,7 +383,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_DATA_WINDOW_BOX_ENCRATE]
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 18,
         .tilemapTop = 3,
         .width = 3,
@@ -385,7 +393,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     },
     [EV_LABEL_WINDOW_BOX_OVERVIEW]
     {
-        .bg = 0,
+        .bg = 1,
         .tilemapLeft = 1,
         .tilemapTop = 3,
         .width = 12,
@@ -633,8 +641,10 @@ static bool8 Menu_DoGfxSetup(void)
 static void Menu_FreeResources(void)
 {
     try_free(sMenuDataPtr);
+    try_free(sBg0TilemapBuffer);
     try_free(sBg1TilemapBuffer);
     try_free(sBg2TilemapBuffer);
+    try_free(sBg3TilemapBuffer);
     FreeAllWindowBuffers();
 }
 
@@ -660,24 +670,37 @@ static void Menu_FadeAndBail(void)
 static bool8 Menu_InitBgs(void)
 {
     ResetAllBgsCoordinates();
+    sBg0TilemapBuffer = Alloc(0x800);
+    if (sBg0TilemapBuffer == NULL)
+        return FALSE;
     sBg1TilemapBuffer = Alloc(0x800);
     if (sBg1TilemapBuffer == NULL)
         return FALSE;
     sBg2TilemapBuffer = Alloc(0x800);
     if (sBg2TilemapBuffer == NULL)
         return FALSE;
+    sBg3TilemapBuffer = Alloc(0x800);
+    if (sBg3TilemapBuffer == NULL)
+        return FALSE;
     
+    memset(sBg0TilemapBuffer, 0, 0x800);
     memset(sBg1TilemapBuffer, 0, 0x800);
     memset(sBg2TilemapBuffer, 0, 0x800);
+    memset(sBg3TilemapBuffer, 0, 0x800);
     ResetBgsAndClearDma3BusyFlags(0);
     InitBgsFromTemplates(0, sMenuBgTemplates, NELEMS(sMenuBgTemplates));
+    SetBgTilemapBuffer(0, sBg0TilemapBuffer);
     SetBgTilemapBuffer(1, sBg1TilemapBuffer);
     SetBgTilemapBuffer(2, sBg2TilemapBuffer);
+    SetBgTilemapBuffer(3, sBg3TilemapBuffer);
+    ScheduleBgCopyTilemapToVram(0);
     ScheduleBgCopyTilemapToVram(1);
     ScheduleBgCopyTilemapToVram(2);
+    ScheduleBgCopyTilemapToVram(3);
     ShowBg(0);
     ShowBg(1);
     ShowBg(2);
+    ShowBg(3);
     return TRUE;
 }
 
@@ -690,8 +713,10 @@ static void FreeResourcesForPageChange(void)
 
 static bool8 Menu_CreateBgs()
 {
+    try_free(sBg0TilemapBuffer);
     try_free(sBg1TilemapBuffer);
     try_free(sBg2TilemapBuffer);
+    try_free(sBg3TilemapBuffer);
     return Menu_InitBgs();
 }
 
@@ -707,7 +732,7 @@ static bool8 Menu_LoadGraphics(u8 page)
                 case EV_PAGE_FISH:
                 case EV_PAGE_WATER:
                 case EV_PAGE_ROCK:
-                    DecompressAndCopyTileDataToVram(1, sMenuTiles, 0, 0, 0);
+                    DecompressAndCopyTileDataToVram(0, sMenuTiles, 0, 0, 0);
                     DecompressAndCopyTileDataToVram(2, sMenuTiles, 0, 0, 0);
                     break;
             }
@@ -719,19 +744,19 @@ static bool8 Menu_LoadGraphics(u8 page)
             switch (page)
             {
                 case EV_PAGE_LAND:
-                    LZDecompressWram(sMenuTilemapLand, sBg1TilemapBuffer);
+                    LZDecompressWram(sMenuTilemapLand, sBg2TilemapBuffer);
                     break;
                 case EV_PAGE_FISH:
-                    LZDecompressWram(sMenuTilemapFish, sBg1TilemapBuffer);
+                    LZDecompressWram(sMenuTilemapFish, sBg2TilemapBuffer);
                     break;
                 case EV_PAGE_WATER:
-                    LZDecompressWram(sMenuTilemapWater, sBg1TilemapBuffer);
+                    LZDecompressWram(sMenuTilemapWater, sBg2TilemapBuffer);
                     break;
                 case EV_PAGE_ROCK:
-                    LZDecompressWram(sMenuTilemapRock, sBg1TilemapBuffer);
+                    LZDecompressWram(sMenuTilemapRock, sBg2TilemapBuffer);
                     break;
             }
-            LZDecompressWram(sMenuSlidingPanel, sBg2TilemapBuffer);
+            LZDecompressWram(sMenuSlidingPanel, sBg0TilemapBuffer);
             sMenuDataPtr->gfxLoadState++;
         }
         break;
@@ -919,7 +944,7 @@ static void Task_MenuPanelSlide(u8 taskId)
 {
     #define PANEL_MAX_Y 95
 
-    SetGpuReg(REG_OFFSET_BG2VOFS, sMenuDataPtr->panelY);
+    SetGpuReg(REG_OFFSET_BG0VOFS, sMenuDataPtr->panelY);
     
     if (sMenuDataPtr->panelIsOpen)
     {
