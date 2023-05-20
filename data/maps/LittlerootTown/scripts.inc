@@ -909,6 +909,35 @@ LittlerootTown_EventScript_GiveRunningShoes::
 	delay 30
 	return
 
+LittlerootTown_EventScript_ChoosePokemonToEncrypt::
+	lock
+	faceplayer
+	special CreatePasswordFromPokemon
+	goto_if_eq FALSE, VAR_RESULT, LittlerootTown_EventScript_ChoosePokemonFail
+	msgbox LittlerootTown_EventScript_ChoosePokemonSuccess, MSGBOX_DEFAULT
+	release
+	end
+
+LittlerootTown_EventScript_ChoosePokemonFail::
+	msgbox LittlerootTown_Text_ChoosePokemonFail, MSGBOX_DEFAULT
+	release
+	end
+
+LittlerootTown_EventScript_DecryptPokemon::
+	lock
+	faceplayer
+	special CreatePokemonFromPassword
+	release
+	end
+
+LittlerootTown_EventScript_ChoosePokemonSuccess:
+	.string "Perfect! Your password is:\n"
+	.string "{STR_VAR_1}$"
+
+LittlerootTown_Text_ChoosePokemonFail:
+	.string "Sorry, but it seems like something\n"
+	.string "went wrong. Please try again later!$"
+
 LittlerootTown_Text_OurNewHomeLetsGoInside:
 	.string "MOM: {PLAYER}, we're here, honey!\p"
 	.string "It must be tiring riding with our things\n"
