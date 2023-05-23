@@ -7,8 +7,6 @@
 #include "malloc.h"
 #include "string_util.h"
 
-
-// the order of this struct is important and should not be messed with
 struct TransferData
 {
     u8 pokeball;
@@ -35,7 +33,7 @@ struct TransferData
 #define INVALID    66
 
 // lookup table
-static const u8 d[] = 
+static const u8 d[] =
 {
     64,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66, // 24
     66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,62,66,66,66, // 49
@@ -43,7 +41,7 @@ static const u8 d[] =
     66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66, // 99
     66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66, // 124
     66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66, // 149
-    66,66,66,66,66,66,66,66,66,66,52,53,54,55,56,57,58,59,60,61,66,66,66,66,66, // 174
+    66,66,66,66,66,66,66,66,66,66,66,52,53,54,55,56,57,58,59,60,61,66,66,66,66, // 174
     66,66,66,66,66,66,66,66,66,66,66,63, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, // 199
     13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37, // 224
     38,39,40,41,42,43,44,45,46,47,48,49,50,51,66,66,66,66,66,66,66,66,66,66,66, // 249
@@ -55,12 +53,12 @@ static void stringToBuffer(u8 *src, struct Pokemon *pokemonBuffer, u32 len);
 static void cypher(u8 *enc, u8 *src, u8 key, u32 len);
 static void djb33_hash(u8 *hash, u8 *src, u32 len);
 static u32 base64encode(const void* data_buf, size_t dataLength, char* result, size_t resultSize);
-static u32 base64decode (u8 *in, size_t inLen, u8 *out, size_t *outLen);
+static u32 base64decode (u8 *in, u32 inLen, u8 *out, u32 *outLen);
 
 // fill the transfer data and copy the data to the char array
 static void pokemonToBuffer(struct Pokemon *pokemon, u8* dst, u32 len)
-{   
-    struct TransferData transferData = 
+{
+    struct TransferData transferData =
     {
         .pokeball = GetMonData(pokemon, MON_DATA_POKEBALL),
         .level = GetMonData(pokemon, MON_DATA_LEVEL),
@@ -79,18 +77,19 @@ static void pokemonToBuffer(struct Pokemon *pokemon, u8* dst, u32 len)
         .abilityNum = GetMonData(pokemon, MON_DATA_ABILITY_NUM),
         .personality = GetMonData(pokemon, MON_DATA_PERSONALITY),
     };
-    
+
     memcpy(dst, &transferData, len);
 }
 
 // create a mon with the base arguments and then set any addition argument
 static void stringToBuffer(u8 *src, struct Pokemon *pokemonBuffer, u32 len)
 {
-    u8 temp;
+    u8 i, temp;
     struct TransferData *transferData = Alloc(sizeof(struct TransferData));
     memcpy(transferData, src, len);
 
     CreateMon(pokemonBuffer, transferData->species, transferData->level, 0, 1, transferData->personality, OT_ID_PLAYER_ID, 0);
+
     temp = transferData->abilityNum;
     SetMonData(pokemonBuffer, MON_DATA_ABILITY_NUM, &temp);
     temp = transferData->speedIV;
@@ -105,10 +104,13 @@ static void stringToBuffer(u8 *src, struct Pokemon *pokemonBuffer, u32 len)
     SetMonData(pokemonBuffer, MON_DATA_ATK_IV, &temp);
     temp = transferData->hpIV;
     SetMonData(pokemonBuffer, MON_DATA_HP_IV, &temp);
-    SetMonData(pokemonBuffer, MON_DATA_MOVE1, &transferData->moves[0]);
-    SetMonData(pokemonBuffer, MON_DATA_MOVE2, &transferData->moves[1]);
-    SetMonData(pokemonBuffer, MON_DATA_MOVE3, &transferData->moves[2]);
-    SetMonData(pokemonBuffer, MON_DATA_MOVE4, &transferData->moves[3]);
+
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        SetMonData(pokemonBuffer, MON_DATA_MOVE1 + i, &transferData->moves[i]);
+        SetMonData(pokemonBuffer, MON_DATA_PP1 + i, &gBattleMoves[transferData->moves[i]].pp);
+    }
+
     SetMonData(pokemonBuffer, MON_DATA_HELD_ITEM, &transferData->heldItem);
     SetMonData(pokemonBuffer, MON_DATA_POKEBALL, &transferData->pokeball);
     CalculateMonStats(pokemonBuffer);
@@ -135,7 +137,11 @@ static void djb33_hash(u8 *hash, u8 *src, u32 len)
         h += (h << 5);
         h ^= *src++;
     }
-    memcpy(hash, &h, sizeof(u32));
+    DebugPrintfLevel(MGBA_LOG_ERROR, "hash func: "INT_TO_BINARY_PATTERN, INT_TO_BINARY(h));
+    hash[3] = (u8)(h >> 0);
+    hash[2] = (u8)(h >> 8);
+    hash[1] = (u8)(h >> 16);
+    hash[0] = (u8)(h >> 24);
 }
 
 static u32 base64encode(const void* data_buf, size_t dataLength, char* result, size_t resultSize)
@@ -176,7 +182,7 @@ static u32 base64encode(const void* data_buf, size_t dataLength, char* result, s
         n2 = (u8)(n >> 6) & 63;
         n3 = (u8)n & 63;
         //DebugPrintfLevel(MGBA_LOG_ERROR, "n0,1,2,3: %d, %d, %d, %d", n0,n1,n2,n3);
-            
+
         /*
         * if we have one byte available, then its encoding is spread
         * out over two characters
@@ -213,13 +219,13 @@ static u32 base64encode(const void* data_buf, size_t dataLength, char* result, s
     * create and add padding that is required if we did not have a multiple of 3
     * number of characters available
     */
-    if (padCount > 0) 
-    { 
-        for (; padCount < 3; padCount++) 
-        { 
+    if (padCount > 0)
+    {
+        for (; padCount < 3; padCount++)
+        {
             if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
             result[resultIndex++] = CHAR_EQUALS;
-        } 
+        }
     }
     if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
 
@@ -227,62 +233,42 @@ static u32 base64encode(const void* data_buf, size_t dataLength, char* result, s
     return 0;   /* indicate success */
 }
 
-static u32 base64decode (u8 *in, size_t inLen, u8 *out, size_t *outLen) 
-{ 
+static u32 base64decode (u8 *in, u32 inLen, u8 *out, u32 *outLen)
+{
     u8 *end = in + inLen;
     u8 iter = 0;
     u32 buf = 0;
-    size_t len = 0;
-    
-    DebugPrintfLevel(MGBA_LOG_ERROR, "end: %d", *end);
-    DebugPrintfLevel(MGBA_LOG_ERROR, "outlen: %d", *outLen);
-    DebugPrintfLevel(MGBA_LOG_ERROR, "inlen: %d", inLen);
+    u32 len = 0;
 
     while (in < end) {
         u8 c = d[*in++];
-        DebugPrintfLevel(MGBA_LOG_ERROR, "in: %d", *(in-1));
-        DebugPrintfLevel(MGBA_LOG_ERROR, "in+1: %d", *(in));
-        DebugPrintfLevel(MGBA_LOG_ERROR, "d[in]: %d", d[*(in-1)]);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "d[in+1]: %d", d[*(in)]);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "c: %d", c);
 
-        
         switch (c) {
         case WHITESPACE: continue;   /* skip whitespace */
-            
-        case INVALID:  DebugPrintfLevel(MGBA_LOG_ERROR, "return 1");  return 1;   /* invalid input, return error */
+
+        case INVALID:   return 1;   /* invalid input, return error */
         case EQUALS:                 /* pad character, end of data */
             in = end;
             continue;
         default:
             buf = buf << 6 | c;
-            DebugPrintfLevel(MGBA_LOG_ERROR, "buf: %d", buf);
             iter++; // increment the number of iteration
-            DebugPrintfLevel(MGBA_LOG_ERROR, "iter: %d", iter);
             /* If the buffer is full, split it into bytes */
             if (iter == 4) {
-                DebugPrintfLevel(MGBA_LOG_ERROR, "return 2, %d, %d", (len+3), *outLen);
                 if ((len += 3) > *outLen) return 1; /* buffer overflow */
                 *(out++) = (buf >> 16) & 255;
                 *(out++) = (buf >> 8) & 255;
                 *(out++) = buf & 255;
                 buf = 0; iter = 0;
-                DebugPrintfLevel(MGBA_LOG_ERROR, "out1: %d", *(out-1));
-                DebugPrintfLevel(MGBA_LOG_ERROR, "out2: %d", *(out-2));
-                DebugPrintfLevel(MGBA_LOG_ERROR, "out3: %d", *(out-3));
-                
             }
         }
     }
-    DebugPrintfLevel(MGBA_LOG_ERROR, "iter a: %d", iter);
     if (iter == 3) {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "return 3");
         if ((len += 2) > *outLen) return 1; /* buffer overflow */
         *(out++) = (buf >> 10) & 255;
         *(out++) = (buf >> 2) & 255;
     }
     else if (iter == 2) {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "return 4");
         if (++len > *outLen) return 1; /* buffer overflow */
         *(out++) = (buf >> 4) & 255;
     }
@@ -300,28 +286,19 @@ void CreatePasswordFromPokemon()
     u8 *stringBuffer2 = Alloc(STRING_SIZE);   // does not have an EOS
     u8 *encodedString = Alloc(BASE64_SIZE+1+p); // +1 to append EOS, +p for needed padding
     u8 *hashBuffer = Alloc(sizeof(u32));
-    u32 hash;
 
     pokemonToBuffer(&gPlayerParty[0], stringBuffer, TRANSFER_SIZE);
     djb33_hash(hashBuffer, stringBuffer, TRANSFER_SIZE);
-    hash = (hashBuffer[0] << 24 | hashBuffer[1] << 16 | hashBuffer[2] << 8 | hashBuffer[3]);
-    DebugPrintfLevel(MGBA_LOG_ERROR, "ori hash %d", hash);
     memcpy(stringBuffer2+TRANSFER_SIZE, hashBuffer, sizeof(u32));
     cypher(stringBuffer2, stringBuffer, key, TRANSFER_SIZE);
 
-    
     // base64encode returns 0 on success so we invert
     if (!base64encode((const char*)stringBuffer2, STRING_SIZE, encodedString, BASE64_SIZE+1+p))
     {
         gSpecialVar_Result = TRUE;
         StringCopy(gStringVar1, encodedString);
     }
-    for (int i = 0; i < STRING_SIZE; i++)
-    {
-        //DebugPrintfLevel(MGBA_LOG_ERROR, "enc: %d", encodedString[i]);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "buf: %d", stringBuffer[i]);
-    }
-    
+
     Free(hashBuffer);
     Free(stringBuffer);
     Free(stringBuffer2);
@@ -332,38 +309,27 @@ void CreatePokemonFromPassword()
 {
     u8 p = PADDING_SIZE; // calculate needed padding
     u32 outLen = STRING_SIZE;
+    u32 transferedHash, calculatedHash;
     u8 *decodedString = Alloc(STRING_SIZE);
     u8 *stringBuffer = Alloc(TRANSFER_SIZE);
     u8 *hashBuffer = Alloc(sizeof(u32));
     struct Pokemon *pokemonBuffer = Alloc(sizeof(struct Pokemon));
-    u32 transferedHash, calculatedHash;
 
-    if (!base64decode(gStringVar1, (size_t)(BASE64_SIZE+1+p), decodedString, &outLen))
+    // returns 0 on success so we invert
+    if (!base64decode(gStringVar1, (BASE64_SIZE+1+p), decodedString, &outLen))
     {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "decode success");
-        gSpecialVar_Result = TRUE;
-        memcpy(&transferedHash, decodedString+TRANSFER_SIZE, sizeof(u32));
         cypher(stringBuffer, decodedString, key, TRANSFER_SIZE);
         djb33_hash(hashBuffer, stringBuffer, TRANSFER_SIZE);
+
+        transferedHash = (decodedString[TRANSFER_SIZE] << 24 | decodedString[TRANSFER_SIZE+1] << 16 | decodedString[TRANSFER_SIZE+2] << 8 | decodedString[TRANSFER_SIZE+3]);
         calculatedHash = (hashBuffer[0] << 24 | hashBuffer[1] << 16 | hashBuffer[2] << 8 | hashBuffer[3]);
 
-        for (int i = 0; i < STRING_SIZE; i++)
-        {
-            //DebugPrintfLevel(MGBA_LOG_ERROR, "dec: %d", decodedString[i]);
-            DebugPrintfLevel(MGBA_LOG_ERROR, "buf: %d", stringBuffer[i]);
-        }
-        DebugPrintfLevel(MGBA_LOG_ERROR, "calc hash: %d", calculatedHash);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "tran hash: %d", transferedHash);
         if (calculatedHash == transferedHash)
         {
-            DebugPrintfLevel(MGBA_LOG_ERROR, "hash success");
-            stringToBuffer(stringBuffer, pokemonBuffer, STRING_SIZE);
+            gSpecialVar_Result = TRUE;
+            stringToBuffer(stringBuffer, pokemonBuffer, TRANSFER_SIZE);
             GiveMonToPlayer(pokemonBuffer);
-        } else {
-            DebugPrintfLevel(MGBA_LOG_ERROR, "hash fail");
         }
-    } else {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "decode fail");
     }
 
     Free(hashBuffer);
