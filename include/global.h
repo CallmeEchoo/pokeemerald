@@ -63,6 +63,9 @@
 // Converts a number to Q24.8 fixed-point format
 #define Q_24_8(n)  ((s32)((n) << 8))
 
+// Converts a number to Q4.28 fixed-point-format
+#define Q_8_24(n)  ((s32)((n) << 24))
+
 // Converts a Q8.8 fixed-point format number to a regular integer
 #define Q_8_8_TO_INT(n) ((int)((n) / 256))
 
@@ -73,9 +76,19 @@
 // Converts a Q24.8 fixed-point format number to a regular integer
 #define Q_24_8_TO_INT(n) ((int)((n) >> 8))
 
+// Converts a Q4.28 fixed-point format number to a regular integer
+#define Q_8_24_TO_INT(n) ((int)((n) >> 24))
+
 // Rounding value for Q4.12 fixed-point format
 #define Q_4_12_ROUND ((1) << (12 - 1))
 #define UQ_4_12_ROUND ((1) << (12 - 1))
+
+// Rounding value for Q8.24 fixed-point format
+#define Q_8_24_ROUND ((1) << (24 - 1))
+
+// Mathematical operations for Q4.28 fixed-point numbers
+#define Q_8_24_DIV(a, b) ((s32)((((s64)(a)) << 24) / b))
+#define Q_8_24_MUL(a, b) ((s32)(((s64)(a) * (s64)(b)) + Q_8_24_ROUND) >> 24)
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) >= (b) ? (a) : (b))

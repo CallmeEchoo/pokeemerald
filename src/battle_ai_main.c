@@ -43,6 +43,7 @@ static u8 ChooseMoveOrAction_Singles(void);
 static u8 ChooseMoveOrAction_Doubles(void);
 static void BattleAI_DoAIProcessing(void);
 static bool32 IsPinchBerryItemEffect(u16 holdEffect);
+static u8 ChooseWeightedMoveIndex(void);
 
 // ewram
 EWRAM_DATA const u8 *gAIScriptPtr = NULL;   // Still used in contests
@@ -228,6 +229,7 @@ u8 BattleAI_ChooseMoveOrAction(void)
     memset(&gProtectStructs, 0, MAX_BATTLERS_COUNT * sizeof(struct ProtectStruct));
 
     gCurrentMove = savedCurrentMove;
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "return ChooseMoveOrAction %d", ret);
     return ret;
 }
 
@@ -471,6 +473,10 @@ static u8 ChooseMoveOrAction_Singles(void)
         }
     }
 
+
+    // do weighted scoring
+    return ChooseWeightedMoveIndex();
+
     numOfBestMoves = 1;
     currentMoveArray[0] = AI_THINKING_STRUCT->score[0];
     consideredMoveArray[0] = 0;
@@ -492,6 +498,12 @@ static u8 ChooseMoveOrAction_Singles(void)
                 consideredMoveArray[0] = i;
             }
         }
+    }
+
+    for (i = 0; i < MAX_MON_MOVES;i++) {
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "consideredMoveArray[%d]: %d", i, consideredMoveArray[i]);
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "currentMoveArray[%d]: %d", i, currentMoveArray[i]);
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "score[%d]: %d", i, AI_THINKING_STRUCT->score[i]);
     }
     return consideredMoveArray[Random() % numOfBestMoves];
 }
@@ -616,6 +628,56 @@ static u8 ChooseMoveOrAction_Doubles(void)
     gBattlerTarget = mostViableTargetsArray[Random() % mostViableTargetsNo];
     gBattleStruct->aiChosenTarget[sBattler_AI] = gBattlerTarget;
     return actionOrMoveIndex[gBattlerTarget];
+}
+
+static u8 ChooseWeightedMoveIndex(void)
+{
+    u8 i;
+    s8 maxScore;
+    s32 roll, sumTransformation, cumulative;
+    s32 expTransformation[MAX_MON_MOVES], weightedProbabilities[MAX_MON_MOVES];
+
+    maxScore = 0;
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        if (AI_THINKING_STRUCT->score[i] > maxScore)
+        {
+            maxScore = AI_THINKING_STRUCT->score[i];
+        }
+    }
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "max score: %d", maxScore);
+
+    sumTransformation = 0;
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        expTransformation[i] = (Q_8_24(1) >> abs(AI_THINKING_STRUCT->score[i] - maxScore));
+        sumTransformation += expTransformation[i];
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "exponent: %d", AI_THINKING_STRUCT->score[i] - maxScore);
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "exp transformation: %d", expTransformation[i]);
+    }
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "sum transformation: %d", sumTransformation);
+
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        weightedProbabilities[i] = Q_8_24_DIV(expTransformation[i], sumTransformation);
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "weighted Probability: %d", weightedProbabilities[i]);
+    }
+
+    cumulative = 0;
+    roll = Q_8_24_DIV(Q_8_24(Random() % 100), Q_8_24(100));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "roll: %d", roll);
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        cumulative += weightedProbabilities[i];
+        if (roll <= cumulative) {
+            DebugPrintfLevel(MGBA_LOG_DEBUG, "chosen Index: %d", i);
+            return i;
+        }
+    }
+
+    // should never reach here
+    DebugPrintfLevel(MGBA_LOG_ERROR, "Should never reach");
+    return 0;
 }
 
 static void BattleAI_DoAIProcessing(void)
