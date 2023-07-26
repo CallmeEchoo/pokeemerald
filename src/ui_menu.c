@@ -221,33 +221,6 @@ enum Windows
     EV_WINDOW_END,
 };
 
-enum EncViewerMode
-{
-    EV_MODE_DEFAULT,
-    EV_MODE_SELECT_MON,
-};
-
-enum RodType
-{
-    ROD_OLD,
-    ROD_GOOD,
-    ROD_SUPER,
-    ROD_COUNT,
-};
-
-const u8 encRateLand[]  = {20,20,10,10,10,10,5,5,4,4,1,1};
-const u8 encRateFish[]  = {70,30,60,20,20,40,40,15,4,1};
-const u8 encRateWater[] = {60,30,5,4,1};
-const u8 encRateRock[] = {60,30,5,4,1};
-
-static const u8 *const encRates[ENC_FIELD_COUNT] = 
-{
-    [EV_PAGE_LAND]  = encRateLand,
-    [EV_PAGE_FISH]  = encRateFish,
-    [EV_PAGE_WATER] = encRateWater,
-    [EV_PAGE_ROCK]  = encRateRock,
-};
-
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
 static EWRAM_DATA u8 *sBg0TilemapBuffer = NULL;
@@ -279,6 +252,7 @@ static void PutPageWindowIcons(u8 page);
 static void PutPageWindowSprites(u8 page);
 static void ReloadPageData(void);
 static void ReloadAllPageData(void);
+static void ResetSlidingPanel(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowNarrow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
@@ -299,6 +273,7 @@ static u8 *BaseStatByIndex(u8 selection, u8 stat);
 static u8 *EVYieldByIndex(u8 selection, u8 stat);
 static u8 *BSTByIndex(u8 selection);
 static const u8 *EncRateByPage(u8 page);
+static const u16 *PaletteByPage(void);
 static const struct WildPokemonInfo *GetWildMonInfo(void);
 static bool8 HasWildEncounter();
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo);
@@ -493,7 +468,7 @@ static const u32 sMenuTiles[] = INCBIN_U32("graphics/ui_menu/tiles.4bpp.lz");
 static const u32 sMenuTilesUI[] = INCBIN_U32("graphics/ui_menu/tilesUI.4bpp.lz");
 static const u32 sMenuTilesBG[] = INCBIN_U32("graphics/ui_menu/tilesBG.4bpp.lz");
 
-static const u32 sMenuTilemapUILand[] = INCBIN_U32("graphics/ui_menu/tilemapUILand.bin.lz");
+static const u32 sMenuTilemapLand[] = INCBIN_U32("graphics/ui_menu/tilemapUILand.bin.lz");
 static const u32 sMenuTilemapFish[] = INCBIN_U32("graphics/ui_menu/tilemapUIFish.bin.lz");
 static const u32 sMenuTilemapWater[] = INCBIN_U32("graphics/ui_menu/tilemapUIWater.bin.lz");
 static const u32 sMenuTilemapRock[] = INCBIN_U32("graphics/ui_menu/tilemapUIRock.bin.lz");
@@ -513,12 +488,55 @@ static const u8 sHandCursorShadow_Gfx[] = INCBIN_U8("graphics/pokemon_storage/ha
 static const u32 sSlidingBoxLeft[] = INCBIN_U32("graphics/ui_menu/SlidingBoxLeft.4bpp.lz");
 static const u32 sSlidingBoxRight[] = INCBIN_U32("graphics/ui_menu/SlidingBoxRight.4bpp.lz");
 
+static const u8 encRateLand[]  = {20,20,10,10,10,10,5,5,4,4,1,1};
+static const u8 encRateFish[]  = {70,30,60,20,20,40,40,15,4,1};
+static const u8 encRateWater[] = {60,30,5,4,1};
+static const u8 encRateRock[] = {60,30,5,4,1};
+
 enum Colors
 {
     FONT_BLACK,
     FONT_WHITE,
     FONT_RED,
     FONT_BLUE,
+};
+
+enum EncViewerMode
+{
+    EV_MODE_DEFAULT,
+    EV_MODE_SELECT_MON,
+};
+
+enum RodType
+{
+    ROD_OLD,
+    ROD_GOOD,
+    ROD_SUPER,
+    ROD_COUNT,
+};
+
+static const u8 *const sEncRates[ENC_FIELD_COUNT] = 
+{
+    [EV_PAGE_LAND]  = encRateLand,
+    [EV_PAGE_FISH]  = encRateFish,
+    [EV_PAGE_WATER] = encRateWater,
+    [EV_PAGE_ROCK]  = encRateRock,
+};
+
+static const u32 *const sTilemaps[ENC_FIELD_COUNT] = 
+{
+    [EV_PAGE_LAND]  = sMenuTilemapLand,
+    [EV_PAGE_FISH]  = sMenuTilemapFish,
+    [EV_PAGE_WATER] = sMenuTilemapWater,
+    [EV_PAGE_ROCK]  = sMenuTilemapRock,
+};
+
+static const u16 *const sPalettes[ENC_FIELD_COUNT] = 
+{
+    [EV_PAGE_LAND]  = sMenuPaletteLime,
+    [EV_PAGE_FISH]  = sMenuPaletteBlue,
+    [EV_PAGE_WATER] = sMenuPaletteLightBlue,
+    [EV_PAGE_ROCK]  = sMenuPaletteOrange,
 };
 
 static const u8 sMenuWindowFontColors[][3] = 
@@ -528,8 +546,6 @@ static const u8 sMenuWindowFontColors[][3] =
     [FONT_RED]    = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_GRAY},
     [FONT_BLUE]   = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_GRAY},
 };
-
-static const u8 dash[] = _(" - ");
 
 //==========FUNCTIONS==========//
 // UI loader template
@@ -676,11 +692,11 @@ static bool8 Menu_DoGfxSetup(void)
         break;
     case 12:
         taskId = CreateTask(Task_MenuWaitFadeIn, 0);
-        BlendPalettes(0xFFFFFFFF, 16, RGB_BLACK);
+        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
         gMain.state++;
         break;
     case 13:
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
         gMain.state++;
         break;
     default:
@@ -720,7 +736,7 @@ static void Task_MenuWaitFadeAndBail(u8 taskId)
 
 static void Menu_FadeAndBail(void)
 {
-    BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     CreateTask(Task_MenuWaitFadeAndBail, 0);
     SetVBlankCallback(Menu_VBlankCB);
     SetMainCallback2(Menu_MainCB);
@@ -800,41 +816,13 @@ static bool8 Menu_LoadGraphics(u8 page)
     case 1:
         if (FreeTempTileDataBuffersIfPossible() != TRUE)
         {
-            switch (page)
-            {
-                case EV_PAGE_LAND:
-                    LZDecompressWram(sMenuTilemapUILand, sBg2TilemapBuffer);
-                    break;
-                case EV_PAGE_FISH:
-                    LZDecompressWram(sMenuTilemapFish, sBg2TilemapBuffer);
-                    break;
-                case EV_PAGE_WATER:
-                    LZDecompressWram(sMenuTilemapWater, sBg2TilemapBuffer);
-                    break;
-                case EV_PAGE_ROCK:
-                    LZDecompressWram(sMenuTilemapRock, sBg2TilemapBuffer);
-                    break;
-            }
+            LZDecompressWram(sTilemaps[page], sBg2TilemapBuffer);
             LZDecompressWram(sMenuTilemapBG, sBg3TilemapBuffer);
             sMenuDataPtr->gfxLoadState++;
         }
         break;
     case 2:
-        switch (page)
-        {
-            case EV_PAGE_LAND:
-                LoadPalette(sMenuPaletteLime, 0, 32);
-                break;
-            case EV_PAGE_FISH:
-                LoadPalette(sMenuPaletteLightBlue, 0, 32);
-                break;
-            case EV_PAGE_WATER:
-                LoadPalette(sMenuPaletteBlue, 0, 32);
-                break;
-            case EV_PAGE_ROCK:
-                LoadPalette(sMenuPaletteOrange, 0, 32);
-                break;
-        }
+        LoadPalette(sPalettes[page], 0, 32);
         FillPalBufferBlack();
         sMenuDataPtr->gfxLoadState++;
         break;
@@ -876,7 +864,7 @@ static void Task_MenuMain(u8 taskId)
         if (JOY_NEW(B_BUTTON))
         {
             PlaySE(SE_PC_OFF);
-            BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+            BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
             gTasks[taskId].func = Task_MenuTurnOff;
         }
         if (JOY_NEW(A_BUTTON))
@@ -932,7 +920,7 @@ static void Task_MenuMain(u8 taskId)
             {
                 PlaySE(SE_SELECT);
                 sMenuDataPtr->currPageIndex++;
-                BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+                BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
                 gTasks[taskId].func = Task_BeginPageChange;
             }
         }
@@ -942,7 +930,7 @@ static void Task_MenuMain(u8 taskId)
             {
                 PlaySE(SE_SELECT);
                 sMenuDataPtr->currPageIndex--;
-                BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+                BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
                 gTasks[taskId].func = Task_BeginPageChange;
             }
         }
@@ -1052,6 +1040,14 @@ static void MenuBgSlide(void)
     sMenuDataPtr->bgToggle ^= 1;
 }
 
+static void ResetSlidingPanel(void)
+{
+    SetGpuReg(REG_OFFSET_BG0VOFS, 0);
+    sMenuDataPtr->panelY = 0;
+    sMenuDataPtr->mode = EV_MODE_DEFAULT;
+    sMenuDataPtr->panelIsOpen = FALSE;
+}
+
 static void ReloadPageData(void)
 {
 
@@ -1076,16 +1072,19 @@ static void ReloadPageData(void)
 static void ReloadAllPageData(void)
 {
     FreeResourcesForPageChange();
+    ResetSlidingPanel();
+
     Menu_InitWindows();
     if (!HasWildEncounter())
         return;
-
+    
     PutPageWindowTilemap(sMenuDataPtr->currPageIndex);
     PutPageWindowText(sMenuDataPtr->currPageIndex);
     PutPageMonDataText(sMenuDataPtr->currPageIndex);
     PutPageWindowSprites(sMenuDataPtr->currPageIndex);
     PutPageWindowIcons(sMenuDataPtr->currPageIndex);
     CreateCursorSprites();
+    CreateSlidingBoxSpriteAt(136, 200);
 }
 
 static const u8 sText_Level[] = _("{LV}.");
@@ -1267,8 +1266,8 @@ static void SpriteCB_CursorShadow(struct Sprite *sprite)
 
 static void CreateSlidingBoxSpriteAt(u8 x, u8 y)
 {
-    static const struct CompressedSpriteSheet sheet = {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT};       
-    static const struct SpritePalette pal = {sMenuPaletteLime, PALTAG_SLIDING_BOX};
+    const struct SpritePalette pal = {sPalettes[sMenuDataPtr->currPageIndex], PALTAG_SLIDING_BOX}; 
+    const struct CompressedSpriteSheet sheet = {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT};       
     struct SpriteTemplate sSpriteTemplate = sSpriteTemplate_SlidingBox; 
     
     LoadSpritePalette(&pal);
@@ -1278,6 +1277,19 @@ static void CreateSlidingBoxSpriteAt(u8 x, u8 y)
     sSpriteTemplate.tileTag = sMenuDataPtr->tileTag[SPRITE_ARR_ID_STAT_BOX] = sheet.tag;
     
     sMenuDataPtr->slidingBoxSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_STAT_BOX] = CreateSprite(&sSpriteTemplate, x, y, 0)];
+}
+
+// this needs to be a functions for initializer element in CreateSlidingBoxSpriteAt to be constant
+static const u16 *PaletteByPage(void)
+{
+    switch(sMenuDataPtr->currPageIndex)
+    {
+        case EV_PAGE_LAND:  return sMenuPaletteLime;
+        case EV_PAGE_FISH:  return sMenuPaletteBlue;
+        case EV_PAGE_WATER: return sMenuPaletteLightBlue;
+        case EV_PAGE_ROCK:  return sMenuPaletteOrange;
+        default:            return sMenuPaletteRed;
+    }
 }
 
 static void CreateCursorSprites(void)
@@ -1481,6 +1493,7 @@ static u16 SpeciesByIndex(u8 selection)
     return sMenuDataPtr->uniquePokemon[selection].wildMonData.species;
 }
 
+static const u8 dash[] = _(" - ");
 static u8* LevelRangeByIndex(u8 selection)
 {
     u8 minLevel, maxLevel;
@@ -1590,7 +1603,7 @@ static bool8 HasWildEncounter()
 
 static const u8 *EncRateByPage(u8 page)
 {
-    return encRates[page];
+    return sEncRates[page];
 }
 
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo) 
