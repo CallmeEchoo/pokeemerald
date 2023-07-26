@@ -52,6 +52,12 @@
  */
  
 //==========DEFINES==========//
+#define ENC_FIELD_COUNT 4
+
+#define OLD_ROD_ENC_NUM 2
+#define GOOD_ROD_ENC_NUM 3
+#define SUPER_ROD_ENC_NUM 5
+
 #define Y_OFFSET 32
 #define X_OFFSET 32
 
@@ -76,8 +82,7 @@ enum SpriteArrIds
     SPRITE_ARR_ID_MON_TYPE_2,
     SPRITE_ARR_ID_HAND_CURSOR,
     SPRITE_ARR_ID_HAND_SHADOW,
-    SPRITE_ARR_ID_BOX_LEFT,
-    SPRITE_ARR_ID_BOX_RIGHT,
+    SPRITE_ARR_ID_STAT_BOX,
     SPRITE_ARR_ID_COUNT,
 };
 
@@ -158,7 +163,7 @@ struct MenuResources
     bool8 panelIsOpen;
     struct Sprite *cursorSprite;
     struct Sprite *cursorShadowSprite;
-    struct Sprite *slidingBoxSpriteLeft;
+    struct Sprite *slidingBoxSprite;
     struct Sprite *slidingBoxSpriteRight;
     struct WildPokemonUnique uniquePokemon[MAX_UNIQUE_POKEMON];
     u8 uniquePokemonCount;
@@ -166,7 +171,9 @@ struct MenuResources
     s8 horizontalOffset;
     bool8 bgDirection; // 0 left, 1 right
     bool8 bgToggle;
-
+    u8 oldRodEncNum;
+    u8 goodRodEncNum;
+    u8 superRodEncNum;
 };
 
 enum Pages
@@ -228,10 +235,18 @@ enum RodType
     ROD_COUNT,
 };
 
-static const u8 encRateLand[LAND_WILD_COUNT]  = {20,20,10,10,10,10,5,5,4,4,1,1};
-static const u8 encRateFish[FISH_WILD_COUNT] = {70,30,60,20,20,40,40,15,4,1};
-static const u8 encRateWater[WATER_WILD_COUNT]  = {60,30,5,4,1};
-static const u8 encRateRock[ROCK_WILD_COUNT]  = {60,30,5,4,1};
+const u8 encRateLand[]  = {20,20,10,10,10,10,5,5,4,4,1,1};
+const u8 encRateFish[]  = {70,30,60,20,20,40,40,15,4,1};
+const u8 encRateWater[] = {60,30,5,4,1};
+const u8 encRateRock[] = {60,30,5,4,1};
+
+static const u8 *const encRates[ENC_FIELD_COUNT] = 
+{
+    [EV_PAGE_LAND]  = encRateLand,
+    [EV_PAGE_FISH]  = encRateFish,
+    [EV_PAGE_WATER] = encRateWater,
+    [EV_PAGE_ROCK]  = encRateRock,
+};
 
 //==========EWRAM==========//
 static EWRAM_DATA struct MenuResources *sMenuDataPtr = NULL;
@@ -267,7 +282,7 @@ static void ReloadAllPageData(void);
 static void PrintTextOnWindow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowSmall(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
 static void PrintTextOnWindowNarrow(u8 windowId, const u8 *string, u8 x, u8 y, u8 lineSpacing, u8 colorId);
-static void CreateSlidingBoxSpritesAt(u8 x, u8 y);
+static void CreateSlidingBoxSpriteAt(u8 x, u8 y);
 static void CreateCursorSprites(void);
 static void CursorUpdatePos(void);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
@@ -287,13 +302,12 @@ static const u8 *EncRateByPage(u8 page);
 static const struct WildPokemonInfo *GetWildMonInfo(void);
 static bool8 HasWildEncounter();
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo);
+static u8 DeduplicateWildMons(const struct WildPokemon *wildMons, struct WildPokemonUnique *uniqueMons, u8 uniqueCount, u8 start, u8 end);
 static void InitWildEncounterData();
 static void ResetWildEncounterData();
 static void InitWildMonData(struct WildPokemonUnique *uniqueMons);
 static void FreeResourcesForPageChange(void);
 static void MenuBgSlide(void);
-
-static void PrintDebug();
 
 //==========CONST=DATA==========//
 static const struct BgTemplate sMenuBgTemplates[] =
@@ -480,9 +494,9 @@ static const u32 sMenuTilesUI[] = INCBIN_U32("graphics/ui_menu/tilesUI.4bpp.lz")
 static const u32 sMenuTilesBG[] = INCBIN_U32("graphics/ui_menu/tilesBG.4bpp.lz");
 
 static const u32 sMenuTilemapUILand[] = INCBIN_U32("graphics/ui_menu/tilemapUILand.bin.lz");
-static const u32 sMenuTilemapFish[] = INCBIN_U32("graphics/ui_menu/tilemapFish.bin.lz");
-static const u32 sMenuTilemapWater[] = INCBIN_U32("graphics/ui_menu/tilemapWater.bin.lz");
-static const u32 sMenuTilemapRock[] = INCBIN_U32("graphics/ui_menu/tilemapRock.bin.lz");
+static const u32 sMenuTilemapFish[] = INCBIN_U32("graphics/ui_menu/tilemapUIFish.bin.lz");
+static const u32 sMenuTilemapWater[] = INCBIN_U32("graphics/ui_menu/tilemapUIWater.bin.lz");
+static const u32 sMenuTilemapRock[] = INCBIN_U32("graphics/ui_menu/tilemapUIRock.bin.lz");
 static const u32 sMenuTilemapPanel[] = INCBIN_U32("graphics/ui_menu/tilemapSlidingPanel.bin.lz");
 static const u32 sMenuTilemapBG[] = INCBIN_U32("graphics/ui_menu/tilemapBG.bin.lz");
 
@@ -511,8 +525,8 @@ static const u8 sMenuWindowFontColors[][3] =
 {
     [FONT_BLACK]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},
     [FONT_WHITE]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_WHITE,  TEXT_COLOR_DARK_GRAY},
-    [FONT_RED]   = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_GRAY},
-    [FONT_BLUE]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_GRAY},
+    [FONT_RED]    = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_GRAY},
+    [FONT_BLUE]   = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_GRAY},
 };
 
 static const u8 dash[] = _(" - ");
@@ -588,7 +602,6 @@ static void Menu_VBlankCB(void)
 static bool8 Menu_DoGfxSetup(void)
 {
     u8 taskId;
-    DebugPrintfLevel(MGBA_LOG_ERROR, "state: %d", gMain.state);
     switch (gMain.state)
     {
     case 0:
@@ -631,10 +644,6 @@ static bool8 Menu_DoGfxSetup(void)
         gMain.state++;
         break;
     case 6:
-        DebugPrintfLevel(MGBA_LOG_ERROR, "header: %d", gWildMonHeaders[sMenuDataPtr->headerId]);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "Group: %d", gWildMonHeaders[sMenuDataPtr->headerId].mapGroup);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "Num: %d", gWildMonHeaders[sMenuDataPtr->headerId].mapNum);
-        DebugPrintfLevel(MGBA_LOG_ERROR, "enc: %d", HasWildEncounter());
         if (HasWildEncounter())
         {
             gMain.state++;
@@ -662,7 +671,7 @@ static bool8 Menu_DoGfxSetup(void)
         break;
     case 11:
         CreateCursorSprites();
-        CreateSlidingBoxSpritesAt(136, 200);
+        CreateSlidingBoxSpriteAt(136, 200);
         gMain.state++;
         break;
     case 12:
@@ -960,21 +969,17 @@ static void Menu_BeginPageChange(u8 taskId)
                 break;
         }
         ResetWildEncounterData();
-        //DebugPrintfLevel(MGBA_LOG_ERROR, "print 1");
-        //PrintDebug();
         InitWildEncounterData();
         InitWildMonData(sMenuDataPtr->uniquePokemon);
         ReloadAllPageData();
-        //DebugPrintfLevel(MGBA_LOG_ERROR, "print 2");
-        //PrintDebug();
         FillPalBufferBlack();
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, RGB_BLACK);
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
         gTasks[taskId].func = Task_MenuMain;
     }
     else
     {
         PlaySE(SE_PC_OFF);
-        BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, RGB_BLACK);
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
         gTasks[taskId].func = Task_MenuTurnOff;
     }
 }
@@ -1001,7 +1006,7 @@ static void Task_MenuPanelSlide(u8 taskId)
         if (sMenuDataPtr->panelY > 0)
         {
             sMenuDataPtr->panelY -= 5;
-            sMenuDataPtr->slidingBoxSpriteLeft->y += 5;
+            sMenuDataPtr->slidingBoxSprite->y += 5;
             //sMenuDataPtr->slidingBoxSpriteRight->y += 5;
         }
         else if (sMenuDataPtr->panelY == 0)
@@ -1015,7 +1020,7 @@ static void Task_MenuPanelSlide(u8 taskId)
         if (sMenuDataPtr->panelY < PANEL_MAX_Y)
         {
             sMenuDataPtr->panelY += 5;
-            sMenuDataPtr->slidingBoxSpriteLeft->y -= 5;
+            sMenuDataPtr->slidingBoxSprite->y -= 5;
             //sMenuDataPtr->slidingBoxSpriteRight->y -= 5;
         }
         else if (sMenuDataPtr->panelY == PANEL_MAX_Y)
@@ -1059,7 +1064,6 @@ static void ReloadPageData(void)
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]]);
 
     ClearPageWindowTilemap(sMenuDataPtr->currPageIndex);
-    DebugPrintfLevel(MGBA_LOG_ERROR, "%d", HasWildEncounter());
     if (!HasWildEncounter())
         return;
 
@@ -1073,7 +1077,6 @@ static void ReloadAllPageData(void)
 {
     FreeResourcesForPageChange();
     Menu_InitWindows();
-    DebugPrintfLevel(MGBA_LOG_ERROR, "%d", HasWildEncounter());
     if (!HasWildEncounter())
         return;
 
@@ -1162,8 +1165,21 @@ static void PutPageWindowTilemap(u8 page)
 static void PutPageWindowIcons(u8 page)
 {
     u8 i;
-    for (i = 0; i < sMenuDataPtr->uniquePokemonCount; i++)
-        DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y, i);
+    if (page != EV_PAGE_FISH) 
+    {
+        for (i = 0; i < sMenuDataPtr->uniquePokemonCount; i++)
+            DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, (i%3) * X_OFFSET + OW_BOX_X, (i/3) * Y_OFFSET + OW_BOX_Y, i);
+    } 
+    else
+    {
+        for (i = 0; i < sMenuDataPtr->uniquePokemonCount; i++)
+        {
+            if      (i < sMenuDataPtr->oldRodEncNum)    { DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, (i%3) * X_OFFSET + OW_BOX_X,                                    0 * Y_OFFSET + OW_BOX_Y, i); }
+            else if (i < sMenuDataPtr->goodRodEncNum)   { DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, ((i - sMenuDataPtr->oldRodEncNum) % 3) * X_OFFSET + OW_BOX_X,   1 * Y_OFFSET + OW_BOX_Y, i); }
+            else if (i < sMenuDataPtr->superRodEncNum)  { DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, ((i - sMenuDataPtr->goodRodEncNum) % 3) * X_OFFSET + OW_BOX_X, (2 + ((i-sMenuDataPtr->goodRodEncNum)/3)) * Y_OFFSET + OW_BOX_Y, i); }
+            else                                        { /*pray*/ }
+        }
+    }
 }
 
 static void PutPageWindowSprites(u8 page)
@@ -1249,32 +1265,19 @@ static void SpriteCB_CursorShadow(struct Sprite *sprite)
     sprite->y = sMenuDataPtr->cursorSprite->y + 20;
 }
 
-static void CreateSlidingBoxSpritesAt(u8 x, u8 y)
+static void CreateSlidingBoxSpriteAt(u8 x, u8 y)
 {
-    static const struct CompressedSpriteSheet sheets[2] = 
-    {
-        {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT},
-        {sSlidingBoxRight, 64*64/2, GFXTAG_BOX_RIGHT},
-    };
+    static const struct CompressedSpriteSheet sheet = {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT};       
     static const struct SpritePalette pal = {sMenuPaletteLime, PALTAG_SLIDING_BOX};
-    struct SpriteTemplate sSpriteTemplate_BoxLeft = sSpriteTemplate_SlidingBox; 
-    struct SpriteTemplate sSpriteTemplate_BoxRight = sSpriteTemplate_SlidingBox; 
+    struct SpriteTemplate sSpriteTemplate = sSpriteTemplate_SlidingBox; 
     
     LoadSpritePalette(&pal);
-    LoadCompressedSpriteSheet(&sheets[0]);
-    LoadCompressedSpriteSheet(&sheets[1]);
+    LoadCompressedSpriteSheet(&sheet);
 
-    sSpriteTemplate_BoxLeft.tileTag = sheets[0].tag;
-    sSpriteTemplate_BoxRight.tileTag = sheets[1].tag;
-    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_BOX_LEFT] = pal.tag;
-    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_BOX_RIGHT] = pal.tag;
-    sMenuDataPtr->tileTag[SPRITE_ARR_ID_BOX_LEFT] = sheets[0].tag;
-    sMenuDataPtr->tileTag[SPRITE_ARR_ID_BOX_RIGHT] = sheets[1].tag;
-
-    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_LEFT] = CreateSprite(&sSpriteTemplate_BoxLeft, x, y, 0);
-    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_RIGHT] = CreateSprite(&sSpriteTemplate_BoxRight, x+64, y, 0);
-    sMenuDataPtr->slidingBoxSpriteLeft = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_LEFT]];
-    sMenuDataPtr->slidingBoxSpriteRight = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_BOX_RIGHT]];
+    sSpriteTemplate.paletteTag = sMenuDataPtr->paletteTag[SPRITE_ARR_ID_STAT_BOX] = pal.tag;
+    sSpriteTemplate.tileTag = sMenuDataPtr->tileTag[SPRITE_ARR_ID_STAT_BOX] = sheet.tag;
+    
+    sMenuDataPtr->slidingBoxSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_STAT_BOX] = CreateSprite(&sSpriteTemplate, x, y, 0)];
 }
 
 static void CreateCursorSprites(void)
@@ -1393,8 +1396,34 @@ static void CreateCursorSprites(void)
 static void CursorUpdatePos(void)
 {
     int i = sMenuDataPtr->currMonIndex;
-    sMenuDataPtr->cursorSprite->x = (i%3) * X_OFFSET + OW_BOX_X;
-    sMenuDataPtr->cursorSprite->y = (i/3) * Y_OFFSET + OW_BOX_Y - 8;
+    if (sMenuDataPtr->currPageIndex != EV_PAGE_FISH)
+    {
+        sMenuDataPtr->cursorSprite->x = (i%3) * X_OFFSET + OW_BOX_X;
+        sMenuDataPtr->cursorSprite->y = (i/3) * Y_OFFSET + OW_BOX_Y - 8;
+    }
+    else 
+    {
+        if (i < sMenuDataPtr->oldRodEncNum) 
+        { 
+            sMenuDataPtr->cursorSprite->x = (i%3) * X_OFFSET + OW_BOX_X;
+            sMenuDataPtr->cursorSprite->y = 0 * Y_OFFSET + OW_BOX_Y - 8;
+        }
+        else if (i < sMenuDataPtr->goodRodEncNum) 
+        { 
+            sMenuDataPtr->cursorSprite->x = ((i - sMenuDataPtr->oldRodEncNum)%3) * X_OFFSET + OW_BOX_X;
+            sMenuDataPtr->cursorSprite->y = 1 * Y_OFFSET + OW_BOX_Y - 8;
+        }
+        else if (i < sMenuDataPtr->superRodEncNum)
+        {
+            sMenuDataPtr->cursorSprite->x = ((i - sMenuDataPtr->goodRodEncNum)%3) * X_OFFSET + OW_BOX_X;
+            sMenuDataPtr->cursorSprite->y = (2 + ((i-sMenuDataPtr->goodRodEncNum)/3)) * Y_OFFSET + OW_BOX_Y - 8;
+        }
+        else 
+        {
+            /* pray */
+        }
+    }
+
 }
 
 static void DrawMonSprite(u16 species, u8 x, u8 y)
@@ -1440,14 +1469,10 @@ static u8 GetMaxMonIndex(u8 page)
 {
     switch (page)
     {
-        case EV_PAGE_LAND:
-            return LAND_WILD_COUNT;
-        case EV_PAGE_FISH:
-            return FISH_WILD_COUNT;
-        case EV_PAGE_WATER:
-            return WATER_WILD_COUNT;
-        case EV_PAGE_ROCK:
-            return ROCK_WILD_COUNT;
+        case EV_PAGE_LAND:  return LAND_WILD_COUNT;
+        case EV_PAGE_FISH:  return FISH_WILD_COUNT;
+        case EV_PAGE_WATER: return WATER_WILD_COUNT;
+        case EV_PAGE_ROCK:  return ROCK_WILD_COUNT;
     }
 }
 
@@ -1511,24 +1536,12 @@ static u8 *BaseStatByIndex(u8 selection, u8 stat)
     struct WildPokemonUnique wildMon = sMenuDataPtr->uniquePokemon[selection];
     switch (stat)
     {
-        case STAT_HP:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseHP, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
-        case STAT_ATK:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseAttack, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
-        case STAT_DEF:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseDefense, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
-        case STAT_SPATK:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpAttack, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
-        case STAT_SPDEF:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpDefense, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
-        case STAT_SPEED:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpeed, STR_CONV_MODE_RIGHT_ALIGN, 3);
-            break;
+        case STAT_HP:    ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseHP, STR_CONV_MODE_RIGHT_ALIGN, 3);           break;
+        case STAT_ATK:   ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseAttack, STR_CONV_MODE_RIGHT_ALIGN, 3);       break;
+        case STAT_DEF:   ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseDefense, STR_CONV_MODE_RIGHT_ALIGN, 3);      break;
+        case STAT_SPATK: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpAttack, STR_CONV_MODE_RIGHT_ALIGN, 3);     break;
+        case STAT_SPDEF: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpDefense, STR_CONV_MODE_RIGHT_ALIGN, 3);    break;
+        case STAT_SPEED: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.baseSpeed, STR_CONV_MODE_RIGHT_ALIGN, 3);        break;
     }
     return gStringVar1;
 }
@@ -1546,24 +1559,12 @@ static u8 *EVYieldByIndex(u8 selection, u8 stat)
     struct WildPokemonUnique wildMon = sMenuDataPtr->uniquePokemon[selection];
     switch (stat)
     {
-        case STAT_HP:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_HP, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
-        case STAT_ATK:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Attack, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
-        case STAT_DEF:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Defense, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
-        case STAT_SPATK:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_SpAttack, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
-        case STAT_SPDEF:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_SpDefense, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
-        case STAT_SPEED:
-            ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Speed, STR_CONV_MODE_RIGHT_ALIGN, 1);
-            break;
+        case STAT_HP:    ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_HP, STR_CONV_MODE_RIGHT_ALIGN, 1);         break;
+        case STAT_ATK:   ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Attack, STR_CONV_MODE_RIGHT_ALIGN, 1);     break;
+        case STAT_DEF:   ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Defense, STR_CONV_MODE_RIGHT_ALIGN, 1);    break;
+        case STAT_SPATK: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_SpAttack, STR_CONV_MODE_RIGHT_ALIGN, 1);   break;
+        case STAT_SPDEF: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_SpDefense, STR_CONV_MODE_RIGHT_ALIGN, 1);  break;
+        case STAT_SPEED: ConvertIntToDecimalStringN(gStringVar1, wildMon.wildMonData.evYield_Speed, STR_CONV_MODE_RIGHT_ALIGN, 1);      break;
     }
     return gStringVar1;
 }
@@ -1573,14 +1574,10 @@ static const struct WildPokemonInfo* GetWildMonInfo(void)
 
     switch(sMenuDataPtr->currPageIndex)
     {
-        case EV_PAGE_LAND:
-            return gWildMonHeaders[sMenuDataPtr->headerId].landMonsInfo;
-        case EV_PAGE_FISH:
-            return gWildMonHeaders[sMenuDataPtr->headerId].fishingMonsInfo;
-        case EV_PAGE_WATER:
-            return gWildMonHeaders[sMenuDataPtr->headerId].waterMonsInfo;
-        case EV_PAGE_ROCK:
-            return gWildMonHeaders[sMenuDataPtr->headerId].rockSmashMonsInfo; 
+        case EV_PAGE_LAND:  return gWildMonHeaders[sMenuDataPtr->headerId].landMonsInfo;
+        case EV_PAGE_FISH:  return gWildMonHeaders[sMenuDataPtr->headerId].fishingMonsInfo;
+        case EV_PAGE_WATER: return gWildMonHeaders[sMenuDataPtr->headerId].waterMonsInfo;
+        case EV_PAGE_ROCK:  return gWildMonHeaders[sMenuDataPtr->headerId].rockSmashMonsInfo; 
     }
 }
 
@@ -1593,51 +1590,50 @@ static bool8 HasWildEncounter()
 
 static const u8 *EncRateByPage(u8 page)
 {
-    switch (page)
-    {
-        case EV_PAGE_LAND:
-            return encRateLand;
-        case EV_PAGE_FISH:
-            return encRateFish;
-        case EV_PAGE_WATER:
-            return encRateWater;
-        case EV_PAGE_ROCK:
-            return encRateRock;
-    }
-}
-
-static void PrintDebug()
-{
-    DebugPrintfLevel(MGBA_LOG_ERROR, "num: %d", sMenuDataPtr->uniquePokemonCount);
-    DebugPrintfLevel(MGBA_LOG_ERROR, "maxidx: %d", sMenuDataPtr->maxMonIndex);
-    for (int i = 0; i <= sMenuDataPtr->uniquePokemonCount; i++)
-    {
-        DebugPrintfLevel(MGBA_LOG_ERROR, "mon: %S", gSpeciesNames[sMenuDataPtr->uniquePokemon[i].wildMonData.species]);
-    }
+    return encRates[page];
 }
 
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo) 
 {
-    u8 i, j;
     u8 uniqueCount = 0;
-    bool8 isDuplicate = FALSE;
-    u8 maxMonIndex = GetMaxMonIndex(sMenuDataPtr->currPageIndex);
-    const u8 *encRate = EncRateByPage(sMenuDataPtr->currPageIndex);
-    for (i = 0; i < MAX_UNIQUE_POKEMON; i++)
-    {
-        //DebugPrintfLevel(MGBA_LOG_ERROR, "encR:%d", encRate[i]);
-    }
+    
     const struct WildPokemon *wildMons = wildPokemonInfo->wildPokemon;
     struct WildPokemonUnique *uniqueMons = sMenuDataPtr->uniquePokemon;
     
-    for (i = 0; i < MAX_UNIQUE_POKEMON; i++)
-        sMenuDataPtr->uniquePokemon[i].encChance = 0;
+    if (sMenuDataPtr->currPageIndex != EV_PAGE_FISH)
+    {
+        uniqueCount = DeduplicateWildMons(wildMons, uniqueMons, 0, 0, 0);
+    }
+    else 
+    {
+        sMenuDataPtr->oldRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, 0, 0, OLD_ROD_ENC_NUM);
+        sMenuDataPtr->goodRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, sMenuDataPtr->oldRodEncNum, OLD_ROD_ENC_NUM, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM);
+        uniqueCount = sMenuDataPtr->superRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, sMenuDataPtr->goodRodEncNum, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM + SUPER_ROD_ENC_NUM);
+    }
+    
+    DebugPrintfLevel(MGBA_LOG_WARN, "ucount: %d", uniqueCount);
+    return uniqueCount;
+}
 
-    for (i = 0; i < maxMonIndex; i++)
+// if end != 0 it will be used as the upper bound for looping through the wild mon array
+static u8 DeduplicateWildMons(const struct WildPokemon *wildMons, struct WildPokemonUnique *uniqueMons, u8 uniqueCount, u8 start, u8 end)
+{
+    u8 i, j;
+    u8 uc = uniqueCount;
+    bool8 isDuplicate = FALSE;
+    u8 maxMonIndex;
+    const u8 *encRate = EncRateByPage(sMenuDataPtr->currPageIndex);
+    DebugPrintfLevel(MGBA_LOG_WARN, "uc start: %d", uc);
+
+    maxMonIndex = end != 0 ? end : GetMaxMonIndex(sMenuDataPtr->currPageIndex); 
+    DebugPrintfLevel(MGBA_LOG_WARN, "max mon Index: %d", maxMonIndex);
+    DebugPrintfLevel(MGBA_LOG_WARN, "start index: %d", start);
+    for (i = start; i < maxMonIndex; i++)
     {
         //PrintfLevel(MGBA_LOG_ERROR, "b:%d", uniqueCount);
-        for (j = 0; j < MAX_UNIQUE_POKEMON; j++)
+        for (j = start; j < MAX_UNIQUE_POKEMON; j++)
         {
+            DebugPrintfLevel(MGBA_LOG_ERROR, "unique %S == wild: %S", gSpeciesNames[uniqueMons[j].wildMonData.species], gSpeciesNames[wildMons[i].species]);
             if (uniqueMons[j].wildMonData.species == wildMons[i].species)
             {
                 isDuplicate = TRUE;
@@ -1646,24 +1642,27 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
                     uniqueMons[j].maxLevel = wildMons[i].maxLevel;
                 if (wildMons[i].minLevel < uniqueMons[j].minLevel)
                     uniqueMons[j].minLevel = wildMons[i].minLevel;
-                //DebugPrintfLevel(MGBA_LOG_ERROR, "isDupe:%S", gSpeciesNames[wildMons[i].species]);
-                //DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", uniqueMons[j].encChance, encRate[i]);
+                DebugPrintfLevel(MGBA_LOG_WARN, "species dupe: %S", gSpeciesNames[uniqueMons[j].wildMonData.species]);
             }
 
         }
         if (!isDuplicate)
         {
-            uniqueMons[uniqueCount].wildMonData.species = wildMons[i].species;
-            uniqueMons[uniqueCount].maxLevel = wildMons[i].maxLevel;
-            uniqueMons[uniqueCount].minLevel = wildMons[i].minLevel;
-            uniqueMons[uniqueCount].encChance = encRate[i];
-            uniqueCount++;
-            //DebugPrintfLevel(MGBA_LOG_ERROR, "isNotDupe:%S", gSpeciesNames[wildMons[i].species]);
-            //DebugPrintfLevel(MGBA_LOG_ERROR, "sum:%d, chance:%d", wildMons[i], encRate[i]);
+            uniqueMons[uc].wildMonData.species = wildMons[i].species;
+            uniqueMons[uc].maxLevel = wildMons[i].maxLevel;
+            uniqueMons[uc].minLevel = wildMons[i].minLevel;
+            uniqueMons[uc].encChance = encRate[i];
+            DebugPrintfLevel(MGBA_LOG_WARN, "species no dupe: %S", gSpeciesNames[uniqueMons[uc].wildMonData.species]);
+            uc++;
         }
         isDuplicate = FALSE;
     }
-    return uniqueCount;
+    for (i = 0; i < MAX_MON_COUNT; i++) 
+    {
+        DebugPrintfLevel(MGBA_LOG_WARN, "species %s", gSpeciesNames[uniqueMons[i].wildMonData.species]);
+    }
+    DebugPrintfLevel(MGBA_LOG_WARN, "ucount: %d", uc);
+    return uc;
 }
 
 static void InitWildEncounterData()
