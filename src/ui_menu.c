@@ -52,6 +52,11 @@
  */
  
 //==========DEFINES==========//
+#define TYPE_ICON(type) {s##type##Pic, s##type##Pal}
+
+#define TYPE_1 0
+#define TYPE_2 1
+
 #define ENC_FIELD_COUNT 4
 
 #define OLD_ROD_ENC_NUM 2
@@ -69,7 +74,7 @@
 #define ABILITY_HIDDEN 2
 
 #define MAX_MON_COUNT 12
-#define TYPE_ICON_SPRITE_COUNT 2
+#define MAX_UNIQUE_POKEMON 12
 
 enum SpriteArrIds
 {
@@ -83,6 +88,7 @@ enum SpriteArrIds
     SPRITE_ARR_ID_HAND_CURSOR,
     SPRITE_ARR_ID_HAND_SHADOW,
     SPRITE_ARR_ID_STAT_BOX,
+    SPRITE_ARR_ID_TALL_GRASS,
     SPRITE_ARR_ID_COUNT,
 };
 
@@ -91,8 +97,9 @@ enum SpriteArrIds
 #define PALTAG_MOVE_TYPES 5000
 #define PALTAG_ITEM_ICON 5001 // 5002 for rare
 #define PALTAG_SLIDING_BOX 5003
-
-#define MAX_UNIQUE_POKEMON 12
+#define PALTAG_TALL_GRASS 5004
+#define PALTAG_TYPE1_ICON 5005
+#define PALTAG_TYPE2_ICON 5006
 
 enum SpriteGFXTags
 {
@@ -100,8 +107,10 @@ enum SpriteGFXTags
     GFXTAG_CURSOR_SHADOW,
     GFXTAG_ITEM_ICON_COMMON,
     GFXTAG_ITEM_ICON_RARE,
-    GFXTAG_BOX_LEFT,
-    GFXTAG_BOX_RIGHT,
+    GFXTAG_SLIDING_BOX,
+    GFXTAG_TALL_GRASS,
+    GFXTAG_TYPE1_ICON,
+    GFXTAG_TYPE2_ICON,
 };
 
 enum HandCursorAnim
@@ -261,8 +270,10 @@ static void CreateCursorSprites(void);
 static void CursorUpdatePos(void);
 static void DrawMonIcon(u16 species, u8 x, u8 y, u8 spriteArrId);
 static void DrawMonSprite(u16 species, u8 x, u8 y);
-static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority);
+static void DrawItemSprite(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority);
+static void DrawTypeIcon(u8 type, u8 typeNum, u8 x, u8 y, u8 subpriority);
 static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority);
+static void DrawTallGrassSprite(u8 x, u8 y, u8 subpriority);
 static u8 GetMaxMonIndex(u8 page);
 static u16 SpeciesByIndex(u8 selection);
 static u8 *LevelRangeByIndex(u8 selection);
@@ -273,7 +284,6 @@ static u8 *BaseStatByIndex(u8 selection, u8 stat);
 static u8 *EVYieldByIndex(u8 selection, u8 stat);
 static u8 *BSTByIndex(u8 selection);
 static const u8 *EncRateByPage(u8 page);
-static const u16 *PaletteByPage(void);
 static const struct WildPokemonInfo *GetWildMonInfo(void);
 static bool8 HasWildEncounter();
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo);
@@ -388,8 +398,8 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
     [EV_DATA_WINDOW_BOX_ENCRATE]
     {
         .bg = 1,
-        .tilemapLeft = 18,
-        .tilemapTop = 3,
+        .tilemapLeft = 24,
+        .tilemapTop = 9,
         .width = 3,
         .height = 2,
         .paletteNum = 15,
@@ -441,6 +451,39 @@ static const struct OamData sOamData_SlidingBox =
     .affineParam = 0,
 };
 
+static const struct OamData sOamData_TallGrass = 
+{
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_OFF,
+    .objMode = ST_OAM_OBJ_NORMAL,
+    .mosaic = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(16x16),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(16x16),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
+
+static const struct OamData sOamData_TypeIcon = 
+{
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_OFF,
+    .objMode = ST_OAM_OBJ_NORMAL,
+    .mosaic = 0,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(32x16),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(32x16),
+    .tileNum = 0,
+    .priority = 1,
+    .paletteNum = 0,
+    .affineParam = 0,
+};
 
 static const struct SpriteTemplate sSpriteTemplate_FrontPic = 
 {
@@ -456,8 +499,30 @@ static const struct SpriteTemplate sSpriteTemplate_FrontPic =
 static const struct SpriteTemplate sSpriteTemplate_SlidingBox = 
 {
     .tileTag = TAG_NONE,
-    .paletteTag = PALTAG_SLIDING_BOX,
+    .paletteTag = TAG_NONE,
     .oam = &sOamData_SlidingBox,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate sSpriteTemplate_TallGrass = 
+{
+    .tileTag = TAG_NONE,
+    .paletteTag = TAG_NONE,
+    .oam = &sOamData_TallGrass,
+    .anims = gDummySpriteAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
+static const struct SpriteTemplate sSpriteTemplate_TypeIcon = 
+{
+    .tileTag = TAG_NONE,
+    .paletteTag = TAG_NONE,
+    .oam = &sOamData_TypeIcon,
     .anims = gDummySpriteAnimTable,
     .images = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
@@ -488,10 +553,55 @@ static const u8 sHandCursorShadow_Gfx[] = INCBIN_U8("graphics/pokemon_storage/ha
 static const u32 sSlidingBoxLeft[] = INCBIN_U32("graphics/ui_menu/SlidingBoxLeft.4bpp.lz");
 static const u32 sSlidingBoxRight[] = INCBIN_U32("graphics/ui_menu/SlidingBoxRight.4bpp.lz");
 
+static const u32 sTallGrassPic[] = INCBIN_U32("graphics/field_effects/pics/tall_grass.4bpp");
+static const u16 sTallGrassPal[] = INCBIN_U16("graphics/field_effects/palettes/general_1.gbapal");
+
+static const u32 sBugPic[]      = INCBIN_U32("graphics/ui_menu/types/bug.4bpp.lz");
+static const u32 sDarkPic[]     = INCBIN_U32("graphics/ui_menu/types/dark.4bpp.lz");
+static const u32 sDragonPic[]   = INCBIN_U32("graphics/ui_menu/types/dragon.4bpp.lz");
+static const u32 sElectricPic[] = INCBIN_U32("graphics/ui_menu/types/electric.4bpp.lz");
+static const u32 sFightingPic[] = INCBIN_U32("graphics/ui_menu/types/fighting.4bpp.lz");
+static const u32 sFirePic[]     = INCBIN_U32("graphics/ui_menu/types/fire.4bpp.lz");
+static const u32 sFlyingPic[]   = INCBIN_U32("graphics/ui_menu/types/flying.4bpp.lz");
+static const u32 sGhostPic[]    = INCBIN_U32("graphics/ui_menu/types/ghost.4bpp.lz");
+static const u32 sGrassPic[]    = INCBIN_U32("graphics/ui_menu/types/grass.4bpp.lz");
+static const u32 sGroundPic[]   = INCBIN_U32("graphics/ui_menu/types/ground.4bpp.lz");
+static const u32 sIcePic[]      = INCBIN_U32("graphics/ui_menu/types/ice.4bpp.lz");
+static const u32 sNormalPic[]   = INCBIN_U32("graphics/ui_menu/types/normal.4bpp.lz");
+static const u32 sPoisonPic[]   = INCBIN_U32("graphics/ui_menu/types/poison.4bpp.lz");
+static const u32 sPsychicPic[]  = INCBIN_U32("graphics/ui_menu/types/psychic.4bpp.lz");
+static const u32 sRockPic[]     = INCBIN_U32("graphics/ui_menu/types/rock.4bpp.lz");
+static const u32 sSteelPic[]    = INCBIN_U32("graphics/ui_menu/types/steel.4bpp.lz");
+static const u32 sWaterPic[]    = INCBIN_U32("graphics/ui_menu/types/water.4bpp.lz");
+#ifdef TYPE_FAIRY
+static const u32 sFairyPic[]    = INCBIN_U32("graphics/ui_menu/types/fairy.4bpp.lz");
+#endif
+
+static const u32 sBugPal[]      = INCBIN_U32("graphics/ui_menu/types/bug.gbapal.lz");
+static const u32 sDarkPal[]     = INCBIN_U32("graphics/ui_menu/types/dark.gbapal.lz");
+static const u32 sDragonPal[]   = INCBIN_U32("graphics/ui_menu/types/dragon.gbapal.lz");
+static const u32 sElectricPal[] = INCBIN_U32("graphics/ui_menu/types/electric.gbapal.lz");
+static const u32 sFightingPal[] = INCBIN_U32("graphics/ui_menu/types/fighting.gbapal.lz");
+static const u32 sFirePal[]     = INCBIN_U32("graphics/ui_menu/types/fire.gbapal.lz");
+static const u32 sFlyingPal[]   = INCBIN_U32("graphics/ui_menu/types/flying.gbapal.lz");
+static const u32 sGhostPal[]    = INCBIN_U32("graphics/ui_menu/types/ghost.gbapal.lz");
+static const u32 sGrassPal[]    = INCBIN_U32("graphics/ui_menu/types/grass.gbapal.lz");
+static const u32 sGroundPal[]   = INCBIN_U32("graphics/ui_menu/types/ground.gbapal.lz");
+static const u32 sIcePal[]      = INCBIN_U32("graphics/ui_menu/types/ice.gbapal.lz");
+static const u32 sNormalPal[]   = INCBIN_U32("graphics/ui_menu/types/normal.gbapal.lz");
+static const u32 sPoisonPal[]   = INCBIN_U32("graphics/ui_menu/types/poison.gbapal.lz");
+static const u32 sPsychicPal[]  = INCBIN_U32("graphics/ui_menu/types/psychic.gbapal.lz");
+static const u32 sRockPal[]     = INCBIN_U32("graphics/ui_menu/types/rock.gbapal.lz");
+static const u32 sSteelPal[]    = INCBIN_U32("graphics/ui_menu/types/steel.gbapal.lz");
+static const u32 sWaterPal[]    = INCBIN_U32("graphics/ui_menu/types/water.gbapal.lz");
+#ifdef TYPE_FAIRY
+static const u32 sFairyPal[]    = INCBIN_U32("graphics/ui_menu/types/fairy.gbapal.lz");
+#endif
+
 static const u8 encRateLand[]  = {20,20,10,10,10,10,5,5,4,4,1,1};
 static const u8 encRateFish[]  = {70,30,60,20,20,40,40,15,4,1};
 static const u8 encRateWater[] = {60,30,5,4,1};
-static const u8 encRateRock[] = {60,30,5,4,1};
+static const u8 encRateRock[]  = {60,30,5,4,1};
 
 enum Colors
 {
@@ -505,14 +615,6 @@ enum EncViewerMode
 {
     EV_MODE_DEFAULT,
     EV_MODE_SELECT_MON,
-};
-
-enum RodType
-{
-    ROD_OLD,
-    ROD_GOOD,
-    ROD_SUPER,
-    ROD_COUNT,
 };
 
 static const u8 *const sEncRates[ENC_FIELD_COUNT] = 
@@ -545,6 +647,30 @@ static const u8 sMenuWindowFontColors[][3] =
     [FONT_WHITE]  = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_WHITE,  TEXT_COLOR_DARK_GRAY},
     [FONT_RED]    = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_GRAY},
     [FONT_BLUE]   = {TEXT_COLOR_TRANSPARENT,  TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_GRAY},
+};
+
+static const u32 *const sTypeIcon[][2] = 
+{
+    [TYPE_NORMAL]   = TYPE_ICON(Normal),
+    [TYPE_FIGHTING] = TYPE_ICON(Fighting),
+    [TYPE_FLYING]   = TYPE_ICON(Flying),
+    [TYPE_POISON]   = TYPE_ICON(Poison),
+    [TYPE_GROUND]   = TYPE_ICON(Ground),
+    [TYPE_ROCK]     = TYPE_ICON(Rock),
+    [TYPE_BUG]      = TYPE_ICON(Bug),
+    [TYPE_GHOST]    = TYPE_ICON(Ghost),
+    [TYPE_STEEL]    = TYPE_ICON(Steel),
+    [TYPE_FIRE]     = TYPE_ICON(Fire),
+    [TYPE_WATER]    = TYPE_ICON(Water),
+    [TYPE_GRASS]    = TYPE_ICON(Grass),
+    [TYPE_ELECTRIC] = TYPE_ICON(Electric),
+    [TYPE_PSYCHIC]  = TYPE_ICON(Psychic),
+    [TYPE_ICE]      = TYPE_ICON(Ice),
+    [TYPE_DRAGON]   = TYPE_ICON(Dragon),
+    [TYPE_DARK]     = TYPE_ICON(Dark),
+    #ifdef TYPE_FAIRY
+    [TYPE_FAIRY]    = TYPE_ICON(Fairy),
+    #endif
 };
 
 //==========FUNCTIONS==========//
@@ -1050,12 +1176,14 @@ static void ResetSlidingPanel(void)
 
 static void ReloadPageData(void)
 {
-
+    u8 i;
     ClearSpriteData(SPRITE_ARR_ID_MON_FRONT);
     ClearSpriteData(SPRITE_ARR_ID_ITEM_COMMON);
     ClearSpriteData(SPRITE_ARR_ID_ITEM_RARE);
+    ClearSpriteData(SPRITE_ARR_ID_MON_TYPE_1);
+    ClearSpriteData(SPRITE_ARR_ID_MON_TYPE_2);
 
-    DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]]);
+    //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]]);
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1]]);
     //DestroySpriteAndFreeResources(&gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]]);
 
@@ -1128,6 +1256,7 @@ static void PutPageMonDataText(u8 page)
     PrintTextOnWindowNarrow(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateByIndex(selection), 0, 12, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ENCRATE, EncRateByIndex(selection), 0, 0, 0, FONT_BLACK);
     // base stats
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_HP), 3, 5, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_ATK), 3, 14, 0, FONT_BLACK);
@@ -1171,6 +1300,7 @@ static void PutPageWindowIcons(u8 page)
     } 
     else
     {
+        // AAAAHHHHH
         for (i = 0; i < sMenuDataPtr->uniquePokemonCount; i++)
         {
             if      (i < sMenuDataPtr->oldRodEncNum)    { DrawMonIcon(sMenuDataPtr->uniquePokemon[i].wildMonData.species, (i%3) * X_OFFSET + OW_BOX_X,                                    0 * Y_OFFSET + OW_BOX_Y, i); }
@@ -1183,16 +1313,26 @@ static void PutPageWindowIcons(u8 page)
 
 static void PutPageWindowSprites(u8 page)
 {
+    u8 i;
     u8 spriteId;
     u8 selection = sMenuDataPtr->currMonIndex;
     u16 species = SpeciesByIndex(selection);
+    u8 type1 = sMenuDataPtr->uniquePokemon[selection].wildMonData.types[TYPE_1];
+    u8 type2 = sMenuDataPtr->uniquePokemon[selection].wildMonData.types[TYPE_2];
     u16 itemCommon = sMenuDataPtr->uniquePokemon[selection].wildMonData.itemCommon;
     u16 itemRare = sMenuDataPtr->uniquePokemon[selection].wildMonData.itemRare;
 
     DrawMonSprite(species, 138, 57);
-    DrawItemSprites(itemCommon, COMMON, 192, 115, 1);
-    DrawItemSprites(itemRare, RARE, 224, 115, 1);
-    DrawPokeballSprite(182, 68, 0);
+    DrawItemSprite(itemCommon, COMMON, 192, 115, 1);
+    DrawItemSprite(itemRare, RARE, 224, 115, 1);
+    DrawTypeIcon(type1, TYPE_1, 182, 68, 0);
+    DrawTypeIcon(type2, TYPE_2, 214, 68, 0);
+
+    if(type1 == type2)
+        gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]].invisible = TRUE;
+
+    //DrawPokeballSprite(182, 68, 0);
+    //DrawTallGrassSprite(182, 79, 0);
 }
 
 static void ClearPageWindowTilemap(u8 page)
@@ -1229,25 +1369,12 @@ static void PrintTextOnWindowTiny(u8 windowId, const u8 *string, u8 x, u8 y, u8 
     AddTextPrinterParameterized4(windowId, FONT_TINY, x, y, 0, lineSpacing, sMenuWindowFontColors[colorId], 0, string);
 }
 
-static const u8 sText_MyMenu[] = _("My Menu");
-static void PrintToWindow(u8 windowId, u8 colorIdx)
-{
-    const u8 *str = sText_MyMenu;
-    u8 x = 1;
-    u8 y = 1;
-    
-    FillWindowPixelBuffer(windowId, PIXEL_FILL(TEXT_COLOR_TRANSPARENT));
-    AddTextPrinterParameterized4(windowId, 1, x, y, 0, 0, sMenuWindowFontColors[colorIdx], 0xFF, str);
-    PutWindowTilemap(windowId);
-    CopyWindowToVram(windowId, 3);
-}
-
-const static struct CompressedSpritePalette *GetMonSpritePal(u16 species)
+static const struct CompressedSpritePalette *GetMonSpritePal(u16 species)
 {
     return &gMonPaletteTable[species];
 }
 
-const static struct CompressedSpriteSheet *GetMonSpriteSheet(u16 species)
+static const struct CompressedSpriteSheet *GetMonSpriteSheet(u16 species)
 {
     return &gMonFrontPicTable[species];
 }
@@ -1267,29 +1394,13 @@ static void SpriteCB_CursorShadow(struct Sprite *sprite)
 static void CreateSlidingBoxSpriteAt(u8 x, u8 y)
 {
     const struct SpritePalette pal = {sPalettes[sMenuDataPtr->currPageIndex], PALTAG_SLIDING_BOX}; 
-    const struct CompressedSpriteSheet sheet = {sSlidingBoxLeft, 64*64/2, GFXTAG_BOX_LEFT};       
+    const struct CompressedSpriteSheet sheet = {sSlidingBoxLeft, 64*64/2, GFXTAG_SLIDING_BOX};       
     struct SpriteTemplate sSpriteTemplate = sSpriteTemplate_SlidingBox; 
-    
     LoadSpritePalette(&pal);
     LoadCompressedSpriteSheet(&sheet);
-
     sSpriteTemplate.paletteTag = sMenuDataPtr->paletteTag[SPRITE_ARR_ID_STAT_BOX] = pal.tag;
     sSpriteTemplate.tileTag = sMenuDataPtr->tileTag[SPRITE_ARR_ID_STAT_BOX] = sheet.tag;
-    
     sMenuDataPtr->slidingBoxSprite = &gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_STAT_BOX] = CreateSprite(&sSpriteTemplate, x, y, 0)];
-}
-
-// this needs to be a functions for initializer element in CreateSlidingBoxSpriteAt to be constant
-static const u16 *PaletteByPage(void)
-{
-    switch(sMenuDataPtr->currPageIndex)
-    {
-        case EV_PAGE_LAND:  return sMenuPaletteLime;
-        case EV_PAGE_FISH:  return sMenuPaletteBlue;
-        case EV_PAGE_WATER: return sMenuPaletteLightBlue;
-        case EV_PAGE_ROCK:  return sMenuPaletteOrange;
-        default:            return sMenuPaletteRed;
-    }
 }
 
 static void CreateCursorSprites(void)
@@ -1452,18 +1563,17 @@ static void DrawMonSprite(u16 species, u8 x, u8 y)
     sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_FRONT] = CreateSprite(&spriteTemplate, x, y, 0);
 }
 
-static void DrawItemSprites(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
+static void DrawItemSprite(u16 itemId, u8 rarity, u8 x, u8 y, u8 subpriority)
 {
-    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity] = AddItemIconSpriteAt(GFXTAG_ITEM_ICON_COMMON + rarity, PALTAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
-    if (!rarity)
-    {
-        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON] = PALTAG_ITEM_ICON + rarity;
-        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON] = GFXTAG_ITEM_ICON_COMMON;
-    } else 
-    {
-        sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_RARE] = PALTAG_ITEM_ICON + rarity;
-        sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_RARE] = GFXTAG_ITEM_ICON_RARE;
-    }
+    u8 spriteId;
+    
+    spriteId = AddItemIconSpriteAt(GFXTAG_ITEM_ICON_COMMON + rarity, PALTAG_ITEM_ICON + rarity, itemId, x, y, subpriority);
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity] = spriteId;
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_ITEM_COMMON + rarity] = PALTAG_ITEM_ICON + rarity;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_ITEM_COMMON + rarity] = GFXTAG_ITEM_ICON_COMMON + rarity;
+
+    if (itemId == ITEM_NONE)
+        gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_ITEM_COMMON + rarity]].invisible = TRUE;
 }
 
 static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
@@ -1475,6 +1585,30 @@ static void DrawPokeballSprite(u8 x, u8 y, u8 subpriority)
     gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].callback = SpriteCallbackDummy;
     gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_POKEBALL]].oam.priority = 0;
 
+}
+
+static void DrawTallGrassSprite(u8 x, u8 y, u8 subpriority)
+{
+    const struct SpritePalette pal = {sTallGrassPal, PALTAG_TALL_GRASS};
+    const struct SpriteSheet sheet = {sTallGrassPic + TILE_OFFSET_4BPP(1), 16*16, GFXTAG_TALL_GRASS};
+    struct SpriteTemplate template = sSpriteTemplate_TallGrass;
+    LoadSpritePalette(&pal);
+    LoadSpriteSheet(&sheet);
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_TALL_GRASS] = template.paletteTag = pal.tag;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_TALL_GRASS] = template.tileTag = sheet.tag;
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_TALL_GRASS] = CreateSprite(&template, x, y, 0);
+}
+
+static void DrawTypeIcon(u8 type, u8 typeNum, u8 x, u8 y, u8 subpriority)
+{
+    const struct CompressedSpritePalette pal = {sTypeIcon[type][1], PALTAG_TYPE1_ICON + typeNum};
+    const struct CompressedSpriteSheet sheet = {sTypeIcon[type][0], 32*16/2, GFXTAG_TYPE1_ICON + typeNum};
+    struct SpriteTemplate template = sSpriteTemplate_TypeIcon;
+    LoadCompressedSpritePalette(&pal);
+    LoadCompressedSpriteSheet(&sheet);
+    sMenuDataPtr->paletteTag[SPRITE_ARR_ID_MON_TYPE_1 + typeNum] = template.paletteTag = PALTAG_TYPE1_ICON + typeNum;
+    sMenuDataPtr->tileTag[SPRITE_ARR_ID_MON_TYPE_1 + typeNum] = template.tileTag = GFXTAG_TYPE1_ICON + typeNum;
+    sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_1 + typeNum] = CreateSprite(&template, x, y, 0);
 }
 
 static u8 GetMaxMonIndex(u8 page)
@@ -1608,6 +1742,7 @@ static const u8 *EncRateByPage(u8 page)
 
 static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo) 
 {
+    u8 i;
     u8 uniqueCount = 0;
     
     const struct WildPokemon *wildMons = wildPokemonInfo->wildPokemon;
@@ -1619,12 +1754,13 @@ static u8 GetUniqueWildEncounter(const struct WildPokemonInfo *wildPokemonInfo)
     }
     else 
     {
+        // this whole section (and anything related to the fish page) is super badly shoehorned in.
+        // It will require a proper refactor eventually but for now its bandaid
         sMenuDataPtr->oldRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, 0, 0, OLD_ROD_ENC_NUM);
         sMenuDataPtr->goodRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, sMenuDataPtr->oldRodEncNum, OLD_ROD_ENC_NUM, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM);
         uniqueCount = sMenuDataPtr->superRodEncNum = DeduplicateWildMons(wildMons, uniqueMons, sMenuDataPtr->goodRodEncNum, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM, OLD_ROD_ENC_NUM + GOOD_ROD_ENC_NUM + SUPER_ROD_ENC_NUM);
     }
     
-    DebugPrintfLevel(MGBA_LOG_WARN, "ucount: %d", uniqueCount);
     return uniqueCount;
 }
 
@@ -1636,17 +1772,13 @@ static u8 DeduplicateWildMons(const struct WildPokemon *wildMons, struct WildPok
     bool8 isDuplicate = FALSE;
     u8 maxMonIndex;
     const u8 *encRate = EncRateByPage(sMenuDataPtr->currPageIndex);
-    DebugPrintfLevel(MGBA_LOG_WARN, "uc start: %d", uc);
 
-    maxMonIndex = end != 0 ? end : GetMaxMonIndex(sMenuDataPtr->currPageIndex); 
-    DebugPrintfLevel(MGBA_LOG_WARN, "max mon Index: %d", maxMonIndex);
-    DebugPrintfLevel(MGBA_LOG_WARN, "start index: %d", start);
+    maxMonIndex = end != 0 ? end : GetMaxMonIndex(sMenuDataPtr->currPageIndex);
     for (i = start; i < maxMonIndex; i++)
     {
         //PrintfLevel(MGBA_LOG_ERROR, "b:%d", uniqueCount);
         for (j = start; j < MAX_UNIQUE_POKEMON; j++)
         {
-            DebugPrintfLevel(MGBA_LOG_ERROR, "unique %S == wild: %S", gSpeciesNames[uniqueMons[j].wildMonData.species], gSpeciesNames[wildMons[i].species]);
             if (uniqueMons[j].wildMonData.species == wildMons[i].species)
             {
                 isDuplicate = TRUE;
@@ -1655,7 +1787,6 @@ static u8 DeduplicateWildMons(const struct WildPokemon *wildMons, struct WildPok
                     uniqueMons[j].maxLevel = wildMons[i].maxLevel;
                 if (wildMons[i].minLevel < uniqueMons[j].minLevel)
                     uniqueMons[j].minLevel = wildMons[i].minLevel;
-                DebugPrintfLevel(MGBA_LOG_WARN, "species dupe: %S", gSpeciesNames[uniqueMons[j].wildMonData.species]);
             }
 
         }
@@ -1665,16 +1796,11 @@ static u8 DeduplicateWildMons(const struct WildPokemon *wildMons, struct WildPok
             uniqueMons[uc].maxLevel = wildMons[i].maxLevel;
             uniqueMons[uc].minLevel = wildMons[i].minLevel;
             uniqueMons[uc].encChance = encRate[i];
-            DebugPrintfLevel(MGBA_LOG_WARN, "species no dupe: %S", gSpeciesNames[uniqueMons[uc].wildMonData.species]);
             uc++;
         }
         isDuplicate = FALSE;
     }
-    for (i = 0; i < MAX_MON_COUNT; i++) 
-    {
-        DebugPrintfLevel(MGBA_LOG_WARN, "species %s", gSpeciesNames[uniqueMons[i].wildMonData.species]);
-    }
-    DebugPrintfLevel(MGBA_LOG_WARN, "ucount: %d", uc);
+
     return uc;
 }
 
