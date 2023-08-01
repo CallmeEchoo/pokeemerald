@@ -142,6 +142,7 @@ struct WildPokemonData
     u8 catchRate;
     u16 itemCommon;
     u16 itemRare;
+    u8 genderRatio;
 };
 
 struct WildPokemonUnique
@@ -204,27 +205,20 @@ enum SubMenu
 
 enum Windows
 {
-    //EV_LABEL_WINDOW_LAND_TITLE,
-    //EV_LABEL_WINDOW_FISHING_TITLE,
-    //EV_LABEL_WINDOW_WATER_ROCK_TITLE,
-
     // Direction Prompts
     //EV_LABEL_WINDOW_PROMPT_DETAILS,
     //EV_LABEL_WINDOW_PROMPT_CANCEL,
 
-    // Box
-    EV_LABEL_WINDOW_BOX_OVERVIEW,
-    EV_LABEL_WINDOW_BOX_LEVEL,
+    // Labels
     EV_LABEL_WINDOW_BOX_STATS,
-    //EV_LABEL_WINDOW_BOX_ABILITIES,
 
     // Data
-    EV_DATA_WINDOW_BOX_SPECIES,
-    EV_DATA_WINDOW_BOX_LEVEL_CATCH,
+    EV_DATA_WINDOW_BOX_LEVEL_SPECIES,
+    EV_DATA_WINDOW_BOX_GENDER_RATE,
+    EV_DATA_WINDOW_BOX_ABILITIES,
     EV_DATA_WINDOW_BOX_BASE_STATS,
     EV_DATA_WINDOW_BOX_EV_YIELD,
-    EV_DATA_WINDOW_BOX_ABILITIES,
-    EV_DATA_WINDOW_BOX_ENCRATE,
+    EV_DATA_WINDOW_BOX_CATCH_ENC,
 
     // end
     EV_WINDOW_END,
@@ -245,7 +239,6 @@ static void Menu_FadeAndBail(void);
 static bool8 Menu_LoadGraphics(u8 page);
 static void Menu_InitWindows(void);
 static void Menu_BeginPageChange(u8 task);
-static void PrintToWindow(u8 windowId, u8 colorIdx);
 static void Task_MenuWaitFadeIn(u8 taskId);
 static void Task_MenuMain(u8 taskId);
 static void Task_MenuTurnOff(u8 taskId);
@@ -283,6 +276,7 @@ static u8 *AbilitiesByIndex(u8 selection, u8 slot);
 static u8 *BaseStatByIndex(u8 selection, u8 stat);
 static u8 *EVYieldByIndex(u8 selection, u8 stat);
 static u8 *BSTByIndex(u8 selection);
+static u8 *GenderRatioByIndex(u8 selection, bool8 female);
 static const u8 *EncRateByPage(u8 page);
 static const struct WildPokemonInfo *GetWildMonInfo(void);
 static bool8 HasWildEncounter();
@@ -325,15 +319,35 @@ static const struct BgTemplate sMenuBgTemplates[] =
 
 static const struct WindowTemplate sMenuWindowTemplates[] = 
 {
-    [EV_LABEL_WINDOW_BOX_LEVEL] = 
+    [EV_DATA_WINDOW_BOX_LEVEL_SPECIES] = 
     {
         .bg = 1,            // which bg to print text on
-        .tilemapLeft = 22,   // position from left (per 8 pixels)
-        .tilemapTop = 6,    // position from top (per 8 pixels)
-        .width = 2,        // width (per 8 pixels)
-        .height = 2,        // height (per 8 pixels)
+        .tilemapLeft = 21,   // position from left (per 8 pixels)
+        .tilemapTop = 4,    // position from top (per 8 pixels)
+        .width = 8,        // width (per 8 pixels)
+        .height = 3,        // height (per 8 pixels)
         .paletteNum = 15,   // palette index to use for text
         .baseBlock = 1,     // tile start in VRAM
+    },
+    [EV_DATA_WINDOW_BOX_GENDER_RATE] = 
+    {
+        .bg = 1,
+        .tilemapLeft = 21,
+        .tilemapTop = 9,
+        .width = 8,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 1 + 24,
+    },
+    [EV_DATA_WINDOW_BOX_ABILITIES]
+    {
+        .bg = 1,
+        .tilemapLeft = 21,
+        .tilemapTop = 11,
+        .width = 8,
+        .height = 5,
+        .paletteNum = 15,
+        .baseBlock = 1 + 24 + 16,
     },
     [EV_LABEL_WINDOW_BOX_STATS] = 
     {
@@ -343,27 +357,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4,
-    },
-    [EV_DATA_WINDOW_BOX_SPECIES] = 
-    {
-        .bg = 1,
-        .tilemapLeft = 22,
-        .tilemapTop = 3,
-        .width = 7,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27,
-    },
-    [EV_DATA_WINDOW_BOX_LEVEL_CATCH]
-    {
-        .bg = 1,
-        .tilemapLeft = 24,
-        .tilemapTop = 6,
-        .width = 5,
-        .height = 4,
-        .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14,
+        .baseBlock = 1 + 24 + 16 + 40,
     },
     [EV_DATA_WINDOW_BOX_BASE_STATS]
     {
@@ -373,7 +367,7 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20,
+        .baseBlock = 1 + 24 + 16 + 40 + 27,
     },
     [EV_DATA_WINDOW_BOX_EV_YIELD]
     {
@@ -383,37 +377,17 @@ static const struct WindowTemplate sMenuWindowTemplates[] =
         .width = 3,
         .height = 9,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27,
+        .baseBlock = 1 + 24 + 16 + 40 + 27 + 27,
     },
-    [EV_DATA_WINDOW_BOX_ABILITIES]
+    [EV_DATA_WINDOW_BOX_CATCH_ENC]
     {
         .bg = 1,
-        .tilemapLeft = 13,
-        .tilemapTop = 11,
+        .tilemapLeft = 21,
+        .tilemapTop = 17,
         .width = 8,
-        .height = 7,
-        .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27,
-    },
-    [EV_DATA_WINDOW_BOX_ENCRATE]
-    {
-        .bg = 1,
-        .tilemapLeft = 24,
-        .tilemapTop = 9,
-        .width = 3,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 56,
-    },
-    [EV_LABEL_WINDOW_BOX_OVERVIEW]
-    {
-        .bg = 1,
-        .tilemapLeft = 1,
-        .tilemapTop = 3,
-        .width = 12,
-        .height = 16,
-        .paletteNum = 15,
-        .baseBlock = 1 + 4 + 27 + 14 + 20 + 27 + 27 + 56 + 6,
+        .baseBlock = 1 + 24 + 16 + 40 + 27 + 27 + 27,
     },
 }; 
 
@@ -1235,7 +1209,7 @@ static const u8 sText_EVs[] = _("EVs");
 
 static void PutPageWindowText(u8 page)
 {
-    PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_LEVEL, sText_Level, 0, 0, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_SPECIES, sText_Level, 1, 12, 0, FONT_BLACK);
 
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_HP, 3, 5, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_LABEL_WINDOW_BOX_STATS, sText_ATK, 3, 14, 0, FONT_BLACK);
@@ -1253,10 +1227,12 @@ static void PutPageMonDataText(u8 page)
     u8 selection = sMenuDataPtr->currMonIndex;
     u16 species = SpeciesByIndex(selection);
 
-    PrintTextOnWindowNarrow(EV_DATA_WINDOW_BOX_SPECIES, gSpeciesNames[species], 0, 2, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, LevelRangeByIndex(selection), 0, 0, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_CATCH, CatchRateByIndex(selection), 0, 12, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ENCRATE, EncRateByIndex(selection), 0, 0, 0, FONT_BLACK);
+    PrintTextOnWindowNarrow(EV_DATA_WINDOW_BOX_LEVEL_SPECIES, gSpeciesNames[species], 1, 0, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_LEVEL_SPECIES, LevelRangeByIndex(selection), 14, 12, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_CATCH_ENC, CatchRateByIndex(selection), 12, 0, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_CATCH_ENC, EncRateByIndex(selection), 36, 0, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_GENDER_RATE, GenderRatioByIndex(selection, TRUE), 0, 0, 0, FONT_RED);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_GENDER_RATE, GenderRatioByIndex(selection, FALSE), 32, 0, 0, FONT_BLUE);
     // base stats
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_HP), 3, 5, 0, FONT_BLACK);
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_BASE_STATS, BaseStatByIndex(selection, STAT_ATK), 3, 14, 0, FONT_BLACK);
@@ -1274,8 +1250,8 @@ static void PutPageMonDataText(u8 page)
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_EV_YIELD, EVYieldByIndex(selection, STAT_SPEED), 5, 50, 0, FONT_BLACK);
     // abilities
     PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_1), 3, 6, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 15, 0, FONT_BLACK);
-    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 24, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 16, 0, FONT_BLACK);
+    PrintTextOnWindowSmall(EV_DATA_WINDOW_BOX_ABILITIES, AbilitiesByIndex(selection, ABILITY_2), 3, 26, 0, FONT_BLACK);
 }
 
 static void PutPageWindowTilemap(u8 page)
@@ -1322,17 +1298,14 @@ static void PutPageWindowSprites(u8 page)
     u16 itemCommon = sMenuDataPtr->uniquePokemon[selection].wildMonData.itemCommon;
     u16 itemRare = sMenuDataPtr->uniquePokemon[selection].wildMonData.itemRare;
 
-    DrawMonSprite(species, 138, 57);
-    DrawItemSprite(itemCommon, COMMON, 192, 115, 1);
-    DrawItemSprite(itemRare, RARE, 224, 115, 1);
-    DrawTypeIcon(type1, TYPE_1, 182, 68, 0);
-    DrawTypeIcon(type2, TYPE_2, 214, 68, 0);
+    DrawMonSprite(species, 136, 57);
+    DrawItemSprite(itemCommon, COMMON, 120, 115, 1);
+    DrawItemSprite(itemRare, RARE, 152, 115, 1);
+    DrawTypeIcon(type1, TYPE_1, 184, 68, 0);
+    DrawTypeIcon(type2, TYPE_2, 215, 68, 0);
 
     if(type1 == type2)
         gSprites[sMenuDataPtr->spriteIds[SPRITE_ARR_ID_MON_TYPE_2]].invisible = TRUE;
-
-    //DrawPokeballSprite(182, 68, 0);
-    //DrawTallGrassSprite(182, 79, 0);
 }
 
 static void ClearPageWindowTilemap(u8 page)
@@ -1716,6 +1689,64 @@ static u8 *EVYieldByIndex(u8 selection, u8 stat)
     return gStringVar1;
 }
 
+static const u8 sText_MaleSymbol[] = _("{COLOR_HIGHLIGHT_SHADOW}{LIGHT_BLUE}{WHITE}{BLUE}♂{COLOR_HIGHLIGHT_SHADOW}{DARK_GRAY}{WHITE}{LIGHT_GRAY}");
+static const u8 sText_FemaleSymbol[] = _("{COLOR_HIGHLIGHT_SHADOW}{LIGHT_RED}{WHITE}{RED}♀{COLOR_HIGHLIGHT_SHADOW}{DARK_GRAY}{WHITE}{LIGHT_GRAY}");
+static const u8 sText_GenderRatio[] = _("{STR_VAR_1}.{STR_VAR_2}");
+static const u8 sText_Dash[] = _("-");
+static const u8 sText_TripleDash[] = _("---");
+
+#define UQ_8_8(n) (u16)((n) << 8)
+#define UQ_8_8_ROUND ((1) << (8 - 1))
+#define UQ_8_8_DIV(a, b) (u16)((((u32)(a)) << 8) / b)
+#define UQ_8_8_MUL(a, b) (u16)((((u32)(a) * (u32)(b)) + UQ_8_8_ROUND) >> 8)
+
+#define UQ_8_8_TO_PERCENT(n) (UQ_8_8_MUL(UQ_8_8(100), UQ_8_8_DIV(n, UQ_8_8(254))))
+#define UQ_8_8_WHOLE_NUM(n) (u8)(n >> 8)
+#define UQ_8_8_FRACTION(n) (n & 0xFF) ? 5 : 0 // calculating the exact fraction is unfortunately not possible. so we assume 0.5 if not 0.0
+    
+
+static u8 *GenderRatioByIndex(u8 selection, bool8 female)
+{
+    struct WildPokemonUnique wildMon = sMenuDataPtr->uniquePokemon[selection];
+    u8 genderRatio = wildMon.wildMonData.genderRatio;
+    u16 percentFemale = UQ_8_8_TO_PERCENT(UQ_8_8(genderRatio));
+    u16 percentMale = UQ_8_8(100) - percentFemale;
+    
+    if (female)
+    {
+        if (genderRatio == 255) // genderless
+        {
+            StringCopy(gStringVar1, sText_TripleDash);
+            StringCopy(gStringVar2, sText_Dash);
+        } 
+        else
+        {
+            ConvertIntToDecimalStringN(gStringVar1, UQ_8_8_WHOLE_NUM(percentFemale), STR_CONV_MODE_RIGHT_ALIGN, 3);
+            ConvertIntToDecimalStringN(gStringVar2, UQ_8_8_FRACTION(percentFemale),  STR_CONV_MODE_RIGHT_ALIGN, 1);
+        }
+        StringExpandPlaceholders(gStringVar4, sText_GenderRatio);
+        StringAppend(gStringVar4, sText_FemaleSymbol);
+    }
+    else
+    {
+        if (genderRatio == 255) // genderless
+        {
+            StringCopy(gStringVar1, sText_TripleDash);
+            StringCopy(gStringVar2, sText_Dash);
+        } 
+        else
+        {
+            DebugPrintfLevel(MGBA_LOG_DEBUG, "fraction %d", UQ_8_8_FRACTION(percentMale));
+            ConvertIntToDecimalStringN(gStringVar1, UQ_8_8_WHOLE_NUM(percentMale), STR_CONV_MODE_RIGHT_ALIGN, 3);
+            ConvertIntToDecimalStringN(gStringVar2, UQ_8_8_FRACTION(percentMale),  STR_CONV_MODE_RIGHT_ALIGN, 1);
+        }
+        StringExpandPlaceholders(gStringVar4, sText_GenderRatio);
+        StringAppend(gStringVar4, sText_MaleSymbol);
+    }
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "gender %S", gStringVar4);
+    return gStringVar4;
+}
+
 static const struct WildPokemonInfo* GetWildMonInfo(void)
 {
 
@@ -1846,6 +1877,7 @@ static void InitWildMonData(struct WildPokemonUnique *uniqueMons)
         wildMonData->catchRate = info->catchRate;
         wildMonData->itemCommon = info->itemCommon;
         wildMonData->itemRare = info->itemRare;
+        wildMonData->genderRatio = info->genderRatio;
     }
 }
 
