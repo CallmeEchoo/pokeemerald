@@ -1391,42 +1391,42 @@ static void CreateCursorSprites(void)
         {}
     };
 
-    static const struct OamData sOamData_Cursor =
+    const struct OamData sOamData_Cursor =
     {
         .shape = SPRITE_SHAPE(32x32),
         .size = SPRITE_SIZE(32x32),
         .priority = 1,
     };
-    static const struct OamData sOamData_CursorShadow =
+    const struct OamData sOamData_CursorShadow =
     {
         .shape = SPRITE_SHAPE(16x16),
         .size = SPRITE_SIZE(16x16),
         .priority = 1,
     };
 
-    static const union AnimCmd sAnim_Cursor_Bouncing[] =
+    const union AnimCmd sAnim_Cursor_Bouncing[] =
     {
         ANIMCMD_FRAME(0, 30),
         ANIMCMD_FRAME(16, 30),
         ANIMCMD_JUMP(0)
     };
-    static const union AnimCmd sAnim_Cursor_Still[] =
+    const union AnimCmd sAnim_Cursor_Still[] =
     {
         ANIMCMD_FRAME(0, 5),
         ANIMCMD_END
     };
-    static const union AnimCmd sAnim_Cursor_Open[] =
+    const union AnimCmd sAnim_Cursor_Open[] =
     {
         ANIMCMD_FRAME(32, 5),
         ANIMCMD_END
     };
-    static const union AnimCmd sAnim_Cursor_Fist[] =
+    const union AnimCmd sAnim_Cursor_Fist[] =
     {
         ANIMCMD_FRAME(48, 5),
         ANIMCMD_END
     };
 
-    static const union AnimCmd *const sAnims_Cursor[] =
+    const union AnimCmd *const sAnims_Cursor[] =
     {
         [CURSOR_ANIM_BOUNCE] = sAnim_Cursor_Bouncing,
         [CURSOR_ANIM_STILL]  = sAnim_Cursor_Still,
@@ -1434,7 +1434,7 @@ static void CreateCursorSprites(void)
         [CURSOR_ANIM_FIST]   = sAnim_Cursor_Fist
     };
 
-    static const struct SpriteTemplate sSpriteTemplate_Cursor =
+    const struct SpriteTemplate sSpriteTemplate_Cursor =
     {
         .tileTag = GFXTAG_CURSOR,
         .paletteTag = PALTAG_CURSOR_1,
@@ -1445,7 +1445,7 @@ static void CreateCursorSprites(void)
         .callback = SpriteCallbackDummy,
     };
 
-    static const struct SpriteTemplate sSpriteTemplate_CursorShadow =
+    const struct SpriteTemplate sSpriteTemplate_CursorShadow =
     {
         .tileTag = GFXTAG_CURSOR_SHADOW,
         .paletteTag = PALTAG_CURSOR_1,
@@ -1703,7 +1703,6 @@ static const u8 sText_TripleDash[] = _("---");
 #define UQ_8_8_TO_PERCENT(n) (UQ_8_8_MUL(UQ_8_8(100), UQ_8_8_DIV(n, UQ_8_8(254))))
 #define UQ_8_8_WHOLE_NUM(n) (u8)(n >> 8)
 #define UQ_8_8_FRACTION(n) (n & 0xFF) ? 5 : 0 // calculating the exact fraction is unfortunately not possible. so we assume 0.5 if not 0.0
-    
 
 static u8 *GenderRatioByIndex(u8 selection, bool8 female)
 {
