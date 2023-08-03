@@ -645,38 +645,31 @@ static u8 ChooseWeightedMoveIndex(void)
             maxScore = AI_THINKING_STRUCT->score[i];
         }
     }
-    DebugPrintfLevel(MGBA_LOG_DEBUG, "max score: %d", maxScore);
 
     sumTransformation = 0;
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         expTransformation[i] = (Q_8_24(1) >> abs(AI_THINKING_STRUCT->score[i] - maxScore));
         sumTransformation += expTransformation[i];
-        DebugPrintfLevel(MGBA_LOG_DEBUG, "exponent: %d", AI_THINKING_STRUCT->score[i] - maxScore);
-        DebugPrintfLevel(MGBA_LOG_DEBUG, "exp transformation: %d", expTransformation[i]);
     }
-    DebugPrintfLevel(MGBA_LOG_DEBUG, "sum transformation: %d", sumTransformation);
 
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         weightedProbabilities[i] = Q_8_24_DIV(expTransformation[i], sumTransformation);
-        DebugPrintfLevel(MGBA_LOG_DEBUG, "weighted Probability: %d", weightedProbabilities[i]);
     }
 
     cumulative = 0;
     roll = Q_8_24_DIV(Q_8_24(Random() % 100), Q_8_24(100));
-    DebugPrintfLevel(MGBA_LOG_DEBUG, "roll: %d", roll);
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         cumulative += weightedProbabilities[i];
         if (roll <= cumulative) {
-            DebugPrintfLevel(MGBA_LOG_DEBUG, "chosen Index: %d", i);
             return i;
         }
     }
 
     // should never reach here
-    DebugPrintfLevel(MGBA_LOG_ERROR, "Should never reach");
+    MgbaAssert(__FILE__, __LINE__, "Should not reach!", FALSE);
     return 0;
 }
 
