@@ -204,6 +204,7 @@ void NewGameInitData(void)
     WipeTrainerNameRecords();
     ResetTrainerHillResults();
     ResetContestLinkResults();
+    gSaveBlock2Ptr->playerGym.type = TYPE_NORMAL;
 }
 
 static void ResetMiniGamesRecords(void)

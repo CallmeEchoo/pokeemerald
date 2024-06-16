@@ -134,6 +134,7 @@ void AgbMainLoop(void)
     for (;;)
     {
         ReadKeys();
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "TYPE: %d\n", gSaveBlock2Ptr->playerGym.type);
 
         if (gSoftResetDisabled == FALSE
          && JOY_HELD_RAW(A_BUTTON)
