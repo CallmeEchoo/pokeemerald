@@ -2301,3 +2301,8 @@
 	.macro setwilddoubleflag
 	callnative ScriptSetDoubleBattleFlag
 	.endm
+
+	.macro savegymtype typePtr:req
+	callnative SaveGymType
+	.4byte \typePtr
+	.endm

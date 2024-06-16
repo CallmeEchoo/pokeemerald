@@ -63,6 +63,7 @@
 	.section script_data, "aw", %progbits
 
 	.include "data/script_cmd_table.inc"
+	.include "data/player_gym_scripts.inc"
 
 gSpecialVars::
 	.4byte gSpecialVar_0x8000
