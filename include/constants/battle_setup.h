@@ -15,5 +15,6 @@
 #define TRAINER_BATTLE_SET_TRAINER_B                    11
 #define TRAINER_BATTLE_HILL                             12
 #define TRAINER_BATTLE_TWO_TRAINERS_NO_INTRO            13
+#define TRAINER_BATTLE_GYM_CHALLENGER                   14
 
 #endif // GUARD_CONSTANTS_BATTLE_SETUP_H

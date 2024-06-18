@@ -1,3 +1,14 @@
+.set LOCALID_OPPONENT, 3
+.set LOCALID_TEST, 5
+
+PlayerGym_MapScripts::
+    map_script MAP_SCRIPT_ON_TRANSITION PlayerGym_MapScripts_OnTransition
+    .byte 0
+
+PlayerGym_MapScripts_OnTransition::
+    removeobject LOCALID_OPPONENT
+    end
+
 PlayerGym_EventScript_ChooseType::
     lock
     faceplayer
@@ -7,5 +18,64 @@ PlayerGym_EventScript_Return:
     release
     end
 
+PlayerGym_EventScript_StartGymBattle::
+    lockall
+    faceplayer
+    msgbox PlayerGym_Text_StartGymBattleYesNo, MSGBOX_YESNO
+    switch VAR_RESULT
+    case YES, PlayerGym_EventScript_WalkToGymBattle
+    case NO, PlayerGym_EventScript_Return
 
-    
+PlayerGym_EventScript_WalkToGymBattle:
+    closemessage
+    setgymopponent LOCALID_TEST, OBJ_EVENT_GFX_VAR_1, OBJ_EVENT_GFX_LEAF
+    setgymopponent LOCALID_OPPONENT, OBJ_EVENT_GFX_VAR_0, OBJ_EVENT_GFX_LEAF
+    applymovement OBJ_EVENT_ID_PLAYER, PlayerGym_Movement_WalkToGymBattle
+    waitmovement 0
+    applymovement LOCALID_OPPONENT, PlayerGym_Movement_WalkToGymBattle_Opponent
+    waitmovement 0
+    trainerbattle_gym_challenger TRAINER_LEAF, LOCALID_OPPONENT, PlayerGym_Text_BattleLoss, PlayerGym_Text_BattleLoss, PlayerGym_Text_BattleLoss, PlayerGym_EventScript_AfterBattle
+    releaseall
+    end
+
+PlayerGym_EventScript_AfterBattle:
+    msgbox PlayerGym_Text_AfterBattle, MSGBOX_DEFAULT
+    closemessage
+    goto PlayerGym_EventScript_Return
+
+
+PlayerGym_Movement_WalkToGymBattle:
+    walk_left
+    walk_left
+    walk_left
+    walk_down
+    walk_down
+    walk_down
+    walk_down
+    walk_down
+    step_end
+
+PlayerGym_Movement_WalkToGymBattle_Opponent:
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    step_end
+
+PlayerGym_Text_StartGymBattleYesNo:
+    .string "Do you want to start a battle?$"
+
+PlayerGym_Text_BattleLoss::
+    .string "Tough!$"
+
+PlayerGym_Text_BattleIntro::
+    .string "abcdef$"
+
+PlayerGym_Text_BattleVictory:
+    .string "I won!$"
+
+PlayerGym_Text_AfterBattle:
+    .string "Good Battle!$"
