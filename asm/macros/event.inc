@@ -732,6 +732,11 @@
 	.elseif \type == TRAINER_BATTLE_HILL
 		.4byte \pointer1 @ text
 		.4byte \pointer2 @ text
+	.elseif \type == TYPE_BATTLE_GYM_CHALLENGER
+		.4byte \pointer1 @ intro
+		.4byte \pointer2 @ defeat
+		.4byte \pointer3 @ victory
+		.4byte \pointer4 @ event_script
 	.endif
 	.endm
 
@@ -785,6 +790,11 @@
 	.4byte \lose_text_a
 	.2byte \trainer_b
 	.4byte \lose_text_b
+	.endm
+
+	@Start single gym challenger battle.
+	.macro trainerbattle_gym_challenger trainer:req, localId:req, intro_text:req, lose_text:req, victory_text:req, event_script:req
+	trainerbattle TRAINER_BATTLE_GYM_CHALLENGER, \trainer, \localId, \intro_text, \lose_text, \victory_text, \event_script
 	.endm
 
 	@ Starts a trainer battle using the battle information stored in RAM (usually by the scripts in trainer_battle.inc, which
@@ -2305,4 +2315,17 @@
 	.macro savegymtype typePtr:req
 	callnative SaveGymType
 	.4byte \typePtr
+	.endm
+
+	.macro setgymopponent localId:req varObjId:req gfxId:req
+	callnative SetGymOpponent
+	.2byte \varObjId
+	.2byte \gfxId
+	removeobject \localId
+	addobject \localId
+	.endm
+
+	.macro debugprintf val:req
+	callnative DoDebugPrintf
+	.4byte \val
 	.endm

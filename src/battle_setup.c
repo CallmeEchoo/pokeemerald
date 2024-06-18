@@ -271,6 +271,19 @@ static const struct TrainerBattleParameter sTrainerTwoTrainerBattleParams[] =
     {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},
 };
 
+static const struct TrainerBattleParameter sTrainerGymChallengerBattleParams[] =
+{
+    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},
+    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},
+    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},
+    {&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},
+    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},
+    {&sTrainerVictorySpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},
+    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},
+    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT},
+    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},
+};
+
 #define REMATCH(trainer1, trainer2, trainer3, trainer4, trainer5, map)  \
 {                                                                       \
     .trainerIds = {trainer1, trainer2, trainer3, trainer4, trainer5},   \
@@ -1252,6 +1265,11 @@ const u8 *BattleSetup_ConfigureTrainerBattle(const u8 *data)
         gApproachingTrainerId = 1; // prevent trainer approach
         TrainerBattleLoadArgs(sTrainerTwoTrainerBattleParams, data);
         return EventScript_DoNoIntroTrainerBattle;
+case TRAINER_BATTLE_GYM_CHALLENGER:
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "gym challenger");
+        TrainerBattleLoadArgs(sTrainerGymChallengerBattleParams, data);
+        SetMapVarsToTrainer();
+        return EventScript_TryDoNormalTrainerBattle;
     default:
         if (gApproachingTrainerId == 0)
         {
@@ -1444,6 +1462,17 @@ static void CB2_EndTrainerBattle(void)
     {
         DowngradeBadPoison();
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+    }
+    else if (sTrainerBattleMode == TRAINER_BATTLE_GYM_CHALLENGER)
+    {
+        if (IsPlayerDefeated(gBattleOutcome))
+        {
+            SetMainCallback2(CB2_ReturnToFieldContinueScript);
+        }
+        else
+        {
+            SetMainCallback2(CB2_ReturnToFieldContinueScript);
+        }
     }
     else if (IsPlayerDefeated(gBattleOutcome) == TRUE)
     {
