@@ -732,7 +732,7 @@
 	.elseif \type == TRAINER_BATTLE_HILL
 		.4byte \pointer1 @ text
 		.4byte \pointer2 @ text
-	.elseif \type == TYPE_BATTLE_GYM_CHALLENGER
+	.elseif \type == TRAINER_BATTLE_GYM_CHALLENGER
 		.4byte \pointer1 @ intro
 		.4byte \pointer2 @ defeat
 		.4byte \pointer3 @ victory
@@ -793,8 +793,8 @@
 	.endm
 
 	@Start single gym challenger battle.
-	.macro trainerbattle_gym_challenger trainer:req, localId:req, intro_text:req, lose_text:req, victory_text:req, event_script:req
-	trainerbattle TRAINER_BATTLE_GYM_CHALLENGER, \trainer, \localId, \intro_text, \lose_text, \victory_text, \event_script
+	.macro trainerbattle_gym_challenger trainer:req, intro_text:req, lose_text:req, victory_text:req, event_script:req
+	trainerbattle TRAINER_BATTLE_GYM_CHALLENGER, \trainer, 0, \intro_text, \lose_text, \victory_text, \event_script
 	.endm
 
 	@ Starts a trainer battle using the battle information stored in RAM (usually by the scripts in trainer_battle.inc, which

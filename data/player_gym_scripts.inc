@@ -6,7 +6,6 @@ PlayerGym_MapScripts::
     .byte 0
 
 PlayerGym_MapScripts_OnTransition::
-    removeobject LOCALID_OPPONENT
     end
 
 PlayerGym_EventScript_ChooseType::
@@ -30,11 +29,8 @@ PlayerGym_EventScript_WalkToGymBattle:
     closemessage
     setgymopponent LOCALID_TEST, OBJ_EVENT_GFX_VAR_1, OBJ_EVENT_GFX_LEAF
     setgymopponent LOCALID_OPPONENT, OBJ_EVENT_GFX_VAR_0, OBJ_EVENT_GFX_LEAF
-    applymovement OBJ_EVENT_ID_PLAYER, PlayerGym_Movement_WalkToGymBattle
-    waitmovement 0
-    applymovement LOCALID_OPPONENT, PlayerGym_Movement_WalkToGymBattle_Opponent
-    waitmovement 0
-    trainerbattle_gym_challenger TRAINER_LEAF, LOCALID_OPPONENT, PlayerGym_Text_BattleLoss, PlayerGym_Text_BattleLoss, PlayerGym_Text_BattleLoss, PlayerGym_EventScript_AfterBattle
+
+    trainerbattle_gym_challenger TRAINER_LEAF, PlayerGym_Text_BattleIntro, PlayerGym_Text_BattleLoss, PlayerGym_Text_BattleVictory, PlayerGym_EventScript_AfterBattle
     releaseall
     end
 
@@ -68,11 +64,11 @@ PlayerGym_Movement_WalkToGymBattle_Opponent:
 PlayerGym_Text_StartGymBattleYesNo:
     .string "Do you want to start a battle?$"
 
-PlayerGym_Text_BattleLoss::
-    .string "Tough!$"
+PlayerGym_Text_BattleIntro:
+    .string "Let's fight!$"
 
-PlayerGym_Text_BattleIntro::
-    .string "abcdef$"
+PlayerGym_Text_BattleLoss:
+    .string "Tough!$"
 
 PlayerGym_Text_BattleVictory:
     .string "I won!$"
