@@ -16771,9 +16771,11 @@ Gender: Female
 Music: Male
 Double Battle: No
 
-Bulbasaur
-Level: 5
+Bulbasaur @ Oran Berry
+Level: 15
 IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+- Tackle
+- Vine Whip
 
 === TRAINER_BRENDAN_PLACEHOLDER ===
 Name: BRENDAN

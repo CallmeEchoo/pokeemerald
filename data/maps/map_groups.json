@@ -1,5 +1,6 @@
 {
   "group_order": [
+    "gMapGroup_PlayerGym",
     "gMapGroup_TownsAndRoutes",
     "gMapGroup_IndoorLittleroot",
     "gMapGroup_IndoorOldale",
@@ -34,6 +35,9 @@
     "gMapGroup_IndoorRoute123",
     "gMapGroup_IndoorRoute119",
     "gMapGroup_IndoorRoute124"
+  ],
+  "gMapGroup_PlayerGym": [
+    "PlayerGym_Arena"
   ],
   "gMapGroup_TownsAndRoutes": [
     "PetalburgCity",

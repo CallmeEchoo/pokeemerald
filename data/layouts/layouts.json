@@ -4410,6 +4410,26 @@
       "secondary_tileset": "gTileset_MysteryEventsHouse",
       "border_filepath": "data/layouts/SootopolisCity_MysteryEventsHouse_1F_StairsUnblocked/border.bin",
       "blockdata_filepath": "data/layouts/SootopolisCity_MysteryEventsHouse_1F_StairsUnblocked/map.bin"
+    },
+    {
+      "id": "LAYOUT_ENTRANCE",
+      "name": "Entrance_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_GenericBuilding",
+      "border_filepath": "data/layouts/Entrance/border.bin",
+      "blockdata_filepath": "data/layouts/Entrance/map.bin"
+    },
+    {
+      "id": "LAYOUT_PLAYER_GYM_ARENA",
+      "name": "PlayerGym_Arena_Layout",
+      "width": 20,
+      "height": 20,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_EliteFour",
+      "border_filepath": "data/layouts/PlayerGym_Arena/border.bin",
+      "blockdata_filepath": "data/layouts/PlayerGym_Arena/map.bin"
     }
   ]
 }
