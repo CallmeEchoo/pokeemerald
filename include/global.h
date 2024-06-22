@@ -20,8 +20,6 @@
 #include "constants/items.h"
 #include "config/save.h"
 
-#include "player_gym.h"
-
 // Prevent cross-jump optimization.
 #define BLOCK_CROSS_JUMP asm("");
 
@@ -490,6 +488,11 @@ struct RankingHall2P
     u8 name2[PLAYER_NAME_LENGTH + 1];
     u8 language;
     //u8 padding;
+};
+
+struct PlayerGym
+{
+    u8 type;
 };
 
 struct SaveBlock2
