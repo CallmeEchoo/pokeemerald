@@ -839,4 +839,7 @@ extern const u8 BattleScript_EffectUpperHand[];
 extern const u8 BattleScript_EffectTidyUp[];
 extern const u8 BattleScript_EffectSpicyExtract[];
 
+extern const u8 BattleScript_GymChallengerBattleWon[];
+extern const u8 BattleScript_GymChallengerBattleLost[];
+
 #endif // GUARD_BATTLE_SCRIPTS_H

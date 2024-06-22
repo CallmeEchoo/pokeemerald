@@ -33,6 +33,7 @@
 #include "m4a.h"
 #include "palette.h"
 #include "party_menu.h"
+#include "player_gym.h"
 #include "pokeball.h"
 #include "pokedex.h"
 #include "pokemon.h"
@@ -2046,7 +2047,14 @@ static u8 CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum, bool8 fir
     u8 retVal;
     if (trainerNum == TRAINER_SECRET_BASE)
         return 0;
-    retVal = CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags);
+    if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+    {
+        retVal = CreateNPCGymChallengerParty(party, firstTrainer, gBattleTypeFlags);
+    }
+    else
+    {
+        retVal = CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags);
+    }
     return retVal;
 }
 
@@ -5341,6 +5349,13 @@ static void HandleEndTurn_BattleWon(void)
         else
             PlayBGM(MUS_VICTORY_TRAINER);
     }
+    else if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_GYM_CHALLENGER))
+    {
+        BattleStopLowHpSound();
+        gBattlescriptCurrInstr = BattleScript_GymChallengerBattleWon;
+
+        PlayBGM(MUS_VICTORY_GYM_LEADER);
+    }
     else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER && !(gBattleTypeFlags & BATTLE_TYPE_LINK))
     {
         BattleStopLowHpSound();
@@ -5403,6 +5418,13 @@ static void HandleEndTurn_BattleLost(void)
             gBattlescriptCurrInstr = BattleScript_LinkBattleWonOrLost;
             gBattleOutcome &= ~B_OUTCOME_LINK_BATTLE_RAN;
         }
+    }
+    else if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_GYM_CHALLENGER))
+    {
+        BattleStopLowHpSound();
+        gBattlescriptCurrInstr = BattleScript_GymChallengerBattleLost;
+
+        PlayBGM(MUS_VICTORY_TRAINER);
     }
     else
     {

@@ -2472,10 +2472,3 @@ void ScriptSetDoubleBattleFlag(struct ScriptContext *ctx)
 {
     sIsScriptedWildDouble = TRUE;
 }
-
-void SaveGymType(struct ScriptContext *ctx)
-{
-    u16 type = VarGet(ScriptReadWord(ctx)) + 1; // add one to align with types macros
-    if (type >= TYPE_MYSTERY) type++;           // offset for mystery type
-    gSaveBlock2Ptr->playerGym.type = type;
-}

@@ -1370,6 +1370,9 @@ void BattleSetup_StartTrainerBattle(void)
     else
         gBattleTypeFlags = (BATTLE_TYPE_TRAINER);
 
+    if (sTrainerBattleMode == TRAINER_BATTLE_GYM_CHALLENGER)
+        gBattleTypeFlags |= BATTLE_TYPE_GYM_CHALLENGER;
+
     if (InBattlePyramid())
     {
         VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
@@ -1669,6 +1672,16 @@ const u8 *GetTrainerALoseText(void)
         string = GetSecretBaseTrainerLoseText();
     else
         string = sTrainerADefeatSpeech;
+
+    StringExpandPlaceholders(gStringVar4, ReturnEmptyStringIfNull(string));
+    return gStringVar4;
+}
+
+const u8 *GetTrainerAWinText(void)
+{
+    const u8* string;
+
+    string = sTrainerVictorySpeech;     // TODO might need a second version for trainer B
 
     StringExpandPlaceholders(gStringVar4, ReturnEmptyStringIfNull(string));
     return gStringVar4;

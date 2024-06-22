@@ -10072,3 +10072,31 @@ BattleScript_EffectSnow::
 	call BattleScript_CheckPrimalWeather
 	setfieldweather ENUM_WEATHER_SNOW
 	goto BattleScript_MoveWeatherChange
+
+BattleScript_GymChallengerBattleWon::
+	printstring STRINGID_PLAYERDEFEATEDTRAINER1
+BattleScript_GymChallengerBattleWon_LoseTexts:
+	trainerslidein BS_ATTACKER
+	waitstate
+	printstring STRINGID_GYMCHALLENGER_PLAYERWON
+BattleScript_GymChallengerBattleWon_Reward::
+	getmoneyreward
+	printstring STRINGID_PLAYERGOTMONEY
+	waitmessage B_WAIT_TIME_LONG
+@BattleScript_TryPickUpItems:
+	@jumpifnotbattletype BATTLE_TYPE_PYRAMID, BattleScript_FrontierTrainerBattleWon_End
+	@pickUP
+BattleScript_GymChallengerBattleWon_End:
+	end2
+
+BattleScript_GymChallengerBattleLost::
+	printstring STRINGID_PLAYERDEFEATEDTRAINER1
+BattleScript_GymChallengerBattleLost_LoseTexts:
+	trainerslidein BS_ATTACKER
+	waitstate
+	printstring STRINGID_GYMCHALLENGER_PLAYERLOST
+@BattleScript_TryPickUpItems:
+	@jumpifnotbattletype BATTLE_TYPE_PYRAMID, BattleScript_FrontierTrainerBattleWon_End
+	@pickUP
+BattleScript_GymChallengerBattleLost_End:
+	end2

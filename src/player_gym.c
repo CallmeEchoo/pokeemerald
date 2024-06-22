@@ -1,9 +1,50 @@
 #include "global.h"
 #include "player_gym.h"
+#include "battle_main.h"
+#include "data.h"
 #include "event_data.h"
 #include "event_object_movement.h"
+#include "malloc.h"
+#include "pokemon_sprite_visualizer.h"
 #include "script.h"
+#include "string_util.h"
+#include "constants/abilities.h"
+#include "constants/battle_ai.h"
 #include "constants/event_objects.h"
+
+u8 CreateNPCGymChallengerParty(struct Pokemon* party, bool32 firstTrainer, u32 battleTypeFlags)
+{
+    struct Trainer trainer = {
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT,
+        .trainerClass = TRAINER_CLASS_RIVAL,
+        .encounterMusic_gender = TRAINER_ENCOUNTER_MUSIC_INTENSE,
+        .trainerPic = TRAINER_PIC_RED,
+        .trainerName = _("TEST"),
+        .partySize = 2,
+        .party = (const struct TrainerMon[])
+        {
+            {
+            .species = SPECIES_BULBASAUR,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+            .iv = TRAINER_PARTY_IVS(0, 0, 0, 0, 0, 0),
+            .lvl = 15,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            },
+            {
+            .species = SPECIES_CHARMANDER,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+            .iv = TRAINER_PARTY_IVS(0, 0, 0, 0, 0, 0),
+            .lvl = 15,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            },
+        },
+    };
+
+    return CreateNPCTrainerPartyFromTrainer(party, &trainer, firstTrainer, battleTypeFlags);
+}
+
 
 u16 GetVarObjLocalEventId(u16 id)
 {

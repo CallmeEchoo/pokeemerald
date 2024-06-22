@@ -851,6 +851,9 @@ static const u8 sText_PkmnTerastallizedInto[] = _("{B_ATK_NAME_WITH_PREFIX} tera
 static const u8 sText_SupersweetAromaWafts[] = _("A supersweet aroma is wafting from\nthe syrup covering {B_ATK_NAME_WITH_PREFIX}!");
 static const u8 sText_TidyingUpComplete[] = _("Tidying up complete!");
 
+static const u8 sText_GymBattle_PlayerWon[] = _("{B_TRAINER1_LOSE_TEXT}");
+static const u8 sText_GymBattle_PlayerLost[] = _("{B_TRAINER1_WIN_TEXT}");
+
 const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
 {
     [STRINGID_PKMNTERASTALLIZEDINTO - BATTLESTRINGS_TABLE_START] = sText_PkmnTerastallizedInto,
@@ -1555,6 +1558,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_ITEMWASUSEDUP - BATTLESTRINGS_TABLE_START] = sText_ItemWasUsedUp,
     [STRINGID_ATTACKERLOSTITSTYPE - BATTLESTRINGS_TABLE_START] = sText_AttackerLostItsType,
     [STRINGID_CLOAKEDINAHARSHLIGHT - BATTLESTRINGS_TABLE_START] = sText_PkmnIsCloakedInAHarshLight,
+    [STRINGID_GYMCHALLENGER_PLAYERWON - BATTLESTRINGS_TABLE_START] = sText_GymBattle_PlayerWon,
+    [STRINGID_GYMCHALLENGER_PLAYERLOST - BATTLESTRINGS_TABLE_START] = sText_GymBattle_PlayerLost,
 };
 
 const u16 gTrainerUsedItemStringIds[] =
@@ -3491,6 +3496,10 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
                     CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_PLAYER_WON, gTrainerBattleOpponent_A);
                     toCpy = gStringVar4;
                 }
+                else if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+                {
+                    toCpy = GetTrainerALoseText();      // redundant at the moment but might want to change later.
+                }
                 else
                 {
                     toCpy = GetTrainerALoseText();
@@ -3506,6 +3515,10 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
                 {
                     CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_PLAYER_LOST, gTrainerBattleOpponent_A);
                     toCpy = gStringVar4;
+                }
+                else if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+                {
+                    toCpy = GetTrainerAWinText();
                 }
                 break;
             case B_TXT_26: // ?
