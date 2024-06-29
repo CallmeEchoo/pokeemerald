@@ -1266,7 +1266,6 @@ const u8 *BattleSetup_ConfigureTrainerBattle(const u8 *data)
         TrainerBattleLoadArgs(sTrainerTwoTrainerBattleParams, data);
         return EventScript_DoNoIntroTrainerBattle;
 case TRAINER_BATTLE_GYM_CHALLENGER:
-        DebugPrintfLevel(MGBA_LOG_DEBUG, "gym challenger");
         TrainerBattleLoadArgs(sTrainerGymChallengerBattleParams, data);
         SetMapVarsToTrainer();
         return EventScript_TryDoNormalTrainerBattle;

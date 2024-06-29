@@ -21,6 +21,7 @@
 #include "m4a.h"
 #include "palette.h"
 #include "party_menu.h"
+#include "player_gym.h"
 #include "pokeball.h"
 #include "pokemon.h"
 #include "random.h"
@@ -455,6 +456,10 @@ static u32 OpponentGetTrainerPicId(u32 battlerId)
             trainerPicId = GetTrainerPicFromId(gTrainerBattleOpponent_B);
         else
             trainerPicId = GetTrainerPicFromId(gTrainerBattleOpponent_A);
+    }
+    else if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+    {
+        trainerPicId = GetGymChallengerTrainerPic();
     }
     else
     {

@@ -15,6 +15,7 @@
 #include "link.h"
 #include "menu.h"
 #include "palette.h"
+#include "player_gym.h"
 #include "recorded_battle.h"
 #include "string_util.h"
 #include "strings.h"
@@ -3173,6 +3174,11 @@ static const u8 *BattleStringGetOpponentNameByTrainerId(u16 trainerId, u8 *text,
         GetEreaderTrainerName(text);
         toCpy = text;
     }
+    else if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+    {
+        GetGymChallengerTrainerName(text);
+        toCpy = text;
+    }
     else
     {
         toCpy = GetTrainerNameFromId(trainerId);
@@ -3262,6 +3268,8 @@ static const u8 *BattleStringGetOpponentClassByTrainerId(u16 trainerId)
         toCpy = gTrainerClasses[GetTrainerHillOpponentClass(trainerId)].name;
     else if (gBattleTypeFlags & BATTLE_TYPE_EREADER_TRAINER)
         toCpy = gTrainerClasses[GetEreaderTrainerClassId()].name;
+    else if (gBattleTypeFlags & BATTLE_TYPE_GYM_CHALLENGER)
+        toCpy = gTrainerClasses[GetGymChallengerTrainerClass()].name;
     else
         toCpy = gTrainerClasses[GetTrainerClassFromId(trainerId)].name;
 
