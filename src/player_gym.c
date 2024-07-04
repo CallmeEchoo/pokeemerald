@@ -6,6 +6,7 @@
 #include "event_object_movement.h"
 #include "malloc.h"
 #include "pokemon_sprite_visualizer.h"
+#include "random.h"
 #include "script.h"
 #include "string_util.h"
 #include "constants/abilities.h"
@@ -22,47 +23,63 @@
 #define VAR_ARR_8(item, x) item[x], VAR_ARR_7(item, x+1)
 
 #define VAR_ARR(item, n) VAR_ARR_## n(item, 0)
-#define ExpandItems(item) { VAR_ARR(item, 4) }
+#define ExpandArray(item, n) { VAR_ARR(item, n) }
 
 
-static EWRAM_DATA struct PlayerGymChallengerTrainerData sGymChallenger = {0};
-struct PlayerGymChallengerTrainerData* const challengerPtr = &sGymChallenger;
+static EWRAM_DATA struct GymChallengerTrainerData sGymChallenger = {0};
+struct GymChallengerTrainerData* const challengerPtr = &sGymChallenger;
 
-static struct TrainerMon GetRandomMon()
+static struct TrainerMon GenerateTrainerMonc(void);
+static u16 GenerateItem(void);
+static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* challenger);
+static u8 GenerateGymChallengerTrainerClass(void);
+static u8 GenerateGymChallengerTrainerPic(void);
+static u8 GenerateGymChallengerEncounterMusic(void);
+static u8 GenerateGymChallengerPartySize(void);
+static void GenerateGymChallengerParty(struct GymChallengerTrainerData* challenger);
+static void GenerateGymChallengerItems(struct GymChallengerTrainerData* challenger);
+static u32 GenerateGymChallengerAiFlags(void);
+
+static struct TrainerMon GenerateTrainerMon(void)
 {
-    struct TrainerMon mon = 
+    struct TrainerMon mon =
     {
-        .species = SPECIES_BULBASAUR,
-        .lvl = 10,
-        .gender = GENDER_FEMALE,
+        .species = Random() % NUM_SPECIES,
+        .lvl = 15,
     };
 
     return mon;
 }
 
-static void GeneratePlayerGymChallenger(void)
+static u16 GenerateItem(void)
 {
-    struct PlayerGymChallengerTrainerData challenger = {
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_CHECK_VIABILITY,
-        .doubleBattle = FALSE,
-        .encounterMusic_gender = TRAINER_ENCOUNTER_MUSIC_COOL,
-        .trainerClass = TRAINER_CLASS_BATTLE_GIRL,
-        .trainerName = _("TEST"),
-        .trainerPic = TRAINER_PIC_EXPERT_F,
-    };
+    return Random() % ITEMS_COUNT;
+}
 
-    challenger.partySize = 2;
-    for (int i = 0; i < challenger.partySize; i++)
-    {
-        challenger.party[i] = GetRandomMon();
-    }
+static void GenerateGymChallenger(void)
+{
+    struct GymChallengerTrainerData challenger;
 
-    challenger.items[0] = ITEM_POTION;
+    GenerateGymChallengerTrainerName(&challenger);
+    challenger.trainerClass = GenerateGymChallengerTrainerClass();
+    challenger.trainerPic = GenerateGymChallengerTrainerPic();
+    challenger.encounterMusic_gender = GenerateGymChallengerEncounterMusic();
+    
+    challenger.partySize = GenerateGymChallengerPartySize();
+    GenerateGymChallengerParty(&challenger);
+    GenerateGymChallengerItems(&challenger);
+
+    challenger.aiFlags = GenerateGymChallengerAiFlags();
+    challenger.doubleBattle = 0;
+    challenger.startingStatus = 0;
+
+    challenger.mugshotColor = 0;
+    challenger.mugshotEnabled = 0;
 
     *challengerPtr = challenger;
 }
 
-static struct Trainer GetTrainerDataFromChallenger(struct PlayerGymChallengerTrainerData *challenger)
+static struct Trainer GetTrainerDataFromChallenger(struct GymChallengerTrainerData *challenger)
 {
     struct Trainer trainer =
     {
@@ -73,13 +90,65 @@ static struct Trainer GetTrainerDataFromChallenger(struct PlayerGymChallengerTra
         .trainerClass = challenger->trainerClass,
         .trainerPic = challenger->trainerPic,
         .encounterMusic_gender = challenger->encounterMusic_gender,
-        .items = ExpandItems(challenger->items),
+        .items = ExpandArray(challenger->items, MAX_TRAINER_ITEMS),
         .startingStatus = challenger->startingStatus,
         .mugshotColor = challenger->mugshotColor,
         .mugshotEnabled = challenger->mugshotEnabled,
     };
 
     return trainer;
+}
+
+static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* challenger)
+{
+    const u8 name[] = _("CHALLENGER");
+
+    StringCopy(challenger->trainerName, name);
+}
+
+static u8 GenerateGymChallengerTrainerClass(void)
+{
+    return Random() % TRAINER_CLASS_COUNT;
+}
+
+static u8 GenerateGymChallengerTrainerPic(void)
+{
+    return Random() % TRAINER_PIC_COUNT;
+}
+
+static u8 GenerateGymChallengerEncounterMusic(void)
+{
+    return Random() % TRAINER_ENCOUNTER_MUSIC_COUNT;
+}
+
+static u8 GenerateGymChallengerPartySize(void)
+{
+    return Random() % PARTY_SIZE;
+}
+
+static void GenerateGymChallengerParty(struct GymChallengerTrainerData* challenger)
+{
+    int i;
+
+    for (i = 0; i < challenger->partySize; i++)
+    {
+        challenger->party[i] = GenerateTrainerMon();
+    }
+}
+
+static void GenerateGymChallengerItems(struct GymChallengerTrainerData* challenger)
+{
+    int i;
+
+    for (i = 0; i < MAX_TRAINER_ITEMS; i++)
+    {
+        challenger->items[i] = GenerateItem();
+    }
+}
+
+static u32 GenerateGymChallengerAiFlags(void)
+{
+    return AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_BAD_MOVE; 
 }
 
 u32 GetGymChallengerTrainerPic()
@@ -102,7 +171,7 @@ u8 GetGymChallengerTrainerClass(void)
 
 u8 CreateNPCGymChallengerParty(struct Pokemon* party, bool32 firstTrainer, u32 battleTypeFlags)
 {
-    GeneratePlayerGymChallenger();
+    GenerateGymChallenger();
     struct Trainer trainer = GetTrainerDataFromChallenger(challengerPtr);
     
     return CreateNPCTrainerPartyFromTrainer(party, &trainer, firstTrainer, battleTypeFlags);

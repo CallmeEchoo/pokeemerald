@@ -1,7 +1,35 @@
 #ifndef PLAYER_GYM_H
 #define PLAYER_GYM_H
 
-struct PlayerGymChallengerTrainerData
+enum GymChallengerExpertise
+{
+    ROOKIE,
+    NOVICE,
+    BEGINNER,
+    COMPETENT,
+    PROFICIENT,
+    ADVANCED,
+    EXPERT,
+    ELITE,
+    LEADER,
+    CHAMPION
+};
+
+enum GymChallengerLevel
+{
+    LEVEL_0,
+    LEVEL_1,
+    LEVEL_2,
+    LEVEL_3,
+    LEVEL_4,
+    LEVEL_5,
+    LEVEL_6,
+    LEVEL_7,
+    LEVEL_8,
+    LEVEL_9,
+};
+
+struct GymChallengerTrainerData
 {
     u32 aiFlags;
     struct TrainerMon party[PARTY_SIZE];
@@ -17,7 +45,7 @@ struct PlayerGymChallengerTrainerData
     u8 partySize;
 };
 
-extern struct PlayerGymChallengerTrainerData* const challengerPtr;
+extern struct GymChallengerTrainerData* const challengerPtr;
 
 u8 CreateNPCGymChallengerParty(struct Pokemon* party, bool32 firstTrainer, u32 battleTypeFlags);
 u32 GetGymChallengerTrainerPic(void);

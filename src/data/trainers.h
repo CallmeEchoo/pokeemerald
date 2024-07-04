@@ -42190,3 +42190,38 @@ F_TRAINER_FEMALE |
             },
         },
     },
+#line 16804
+    [TRAINER_GYM_CHALLENGER] =
+    {
+#line 16805
+        .trainerName = _("Challenger"),
+#line 16806
+        .trainerClass = TRAINER_CLASS_RS_PROTAG,
+#line 16807
+        .trainerPic = TRAINER_PIC_RS_BRENDAN,
+        .encounterMusic_gender = 
+#line 16809
+            TRAINER_ENCOUNTER_MUSIC_MALE,
+#line 16810
+        .doubleBattle = FALSE,
+        .partySize = 1,
+        .party = (const struct TrainerMon[])
+        {
+            {
+#line 16812
+            .species = SPECIES_CHARMANDER,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16814
+            .iv = TRAINER_PARTY_IVS(0, 0, 0, 0, 0, 0),
+#line 16813
+            .lvl = 15,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 16815
+                MOVE_TACKLE,
+                MOVE_EMBER,
+            },
+            },
+        },
+    },
