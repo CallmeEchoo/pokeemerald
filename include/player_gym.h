@@ -15,18 +15,25 @@ enum GymChallengerExpertise
     CHAMPION
 };
 
-enum GymChallengerLevel
+enum GymChallengerStage
 {
-    LEVEL_0,
-    LEVEL_1,
-    LEVEL_2,
-    LEVEL_3,
-    LEVEL_4,
-    LEVEL_5,
-    LEVEL_6,
-    LEVEL_7,
-    LEVEL_8,
-    LEVEL_9,
+    // estimates   lvl    bst   stage
+    LOW,        // 15   < 350   first
+    MID,        // 30   < 450   second, weak first
+    HIGH,       // 50   < 520   weak third, strong second, strong first
+    VERY_HIGH,  // 70   < 560   string third, weak legendaries
+    TOP,        // 100  < 800   legendaries, megas, etc.
+};
+
+enum GymChallengerTier
+{
+    UBER,
+    OU,
+    UU,
+    RU,
+    NU,
+    PU,
+    ZU,
 };
 
 struct GymChallengerTrainerData
@@ -43,6 +50,10 @@ struct GymChallengerTrainerData
     u8 startingStatus:6;    // this trainer starts a battle with a given status. see include/constants/battle.h for values
     u8 mugshotColor;
     u8 partySize;
+
+    enum GymChallengerExpertise expertise;
+    enum GymChallengerStage stage;
+    enum GymChallengerTier tier;
 };
 
 extern struct GymChallengerTrainerData* const challengerPtr;

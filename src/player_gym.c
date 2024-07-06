@@ -32,13 +32,13 @@ struct GymChallengerTrainerData* const challengerPtr = &sGymChallenger;
 static struct TrainerMon GenerateTrainerMonc(void);
 static u16 GenerateItem(void);
 static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* challenger);
-static u8 GenerateGymChallengerTrainerClass(void);
-static u8 GenerateGymChallengerTrainerPic(void);
-static u8 GenerateGymChallengerEncounterMusic(void);
-static u8 GenerateGymChallengerPartySize(void);
+static void GenerateGymChallengerTrainerClass(struct GymChallengerTrainerData* challenger);
+static void GenerateGymChallengerTrainerPic(struct GymChallengerTrainerData* challenger);
+static void GenerateGymChallengerEncounterMusic(struct GymChallengerTrainerData* challenger);
+static void GenerateGymChallengerPartySize(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerParty(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerItems(struct GymChallengerTrainerData* challenger);
-static u32 GenerateGymChallengerAiFlags(void);
+static void GenerateGymChallengerAiFlags(struct GymChallengerTrainerData* challenger);
 
 static struct TrainerMon GenerateTrainerMon(void)
 {
@@ -59,6 +59,9 @@ static u16 GenerateItem(void)
 static void GenerateGymChallenger(void)
 {
     struct GymChallengerTrainerData challenger;
+    challenger.expertise = ROOKIE;
+    challenger.stage = LOW;
+    challenger.tier = OU;
 
     GenerateGymChallengerTrainerName(&challenger);
     challenger.trainerClass = GenerateGymChallengerTrainerClass();
@@ -75,7 +78,7 @@ static void GenerateGymChallenger(void)
 
     challenger.mugshotColor = 0;
     challenger.mugshotEnabled = 0;
-
+    
     *challengerPtr = challenger;
 }
 
@@ -106,24 +109,24 @@ static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* ch
     StringCopy(challenger->trainerName, name);
 }
 
-static u8 GenerateGymChallengerTrainerClass(void)
+static void GenerateGymChallengerTrainerClass(struct GymChallengerTrainerData* challenger)
 {
-    return Random() % TRAINER_CLASS_COUNT;
+    challenger->trainerClass = Random() % TRAINER_CLASS_COUNT;
 }
 
-static u8 GenerateGymChallengerTrainerPic(void)
+static void GenerateGymChallengerTrainerPic(struct GymChallengerTrainerData* challenger)
 {
-    return Random() % TRAINER_PIC_COUNT;
+    challenger->trainerPic = Random() % TRAINER_PIC_COUNT;
 }
 
-static u8 GenerateGymChallengerEncounterMusic(void)
+static void GenerateGymChallengerEncounterMusic(struct GymChallengerTrainerData* challenger)
 {
-    return Random() % TRAINER_ENCOUNTER_MUSIC_COUNT;
+    challenger->encounterMusic =  Random() % TRAINER_ENCOUNTER_MUSIC_COUNT;
 }
 
-static u8 GenerateGymChallengerPartySize(void)
+static void GenerateGymChallengerPartySize(struct GymChallengerTrainerData* challenger)
 {
-    return Random() % PARTY_SIZE;
+    challenger->partySize = Random() % PARTY_SIZE;
 }
 
 static void GenerateGymChallengerParty(struct GymChallengerTrainerData* challenger)
@@ -146,9 +149,9 @@ static void GenerateGymChallengerItems(struct GymChallengerTrainerData* challeng
     }
 }
 
-static u32 GenerateGymChallengerAiFlags(void)
+static void GenerateGymChallengerAiFlags(struct GymChallengerTrainerData* challenger)
 {
-    return AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_BAD_MOVE; 
+    challenger->aiFlags = AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_BAD_MOVE; 
 }
 
 u32 GetGymChallengerTrainerPic()
