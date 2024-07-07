@@ -1,7 +1,9 @@
 #include "global.h"
 #include "data.h"
+#include "player_gym_data.h"
 #include "player_gym.h"
 #include "battle_main.h"
+#include "battle_transition.h"
 #include "event_data.h"
 #include "event_object_movement.h"
 #include "malloc.h"
@@ -25,13 +27,15 @@
 #define VAR_ARR(item, n) VAR_ARR_## n(item, 0)
 #define ExpandArray(item, n) { VAR_ARR(item, n) }
 
+typedef void (*GymChallengerGeneratorFunc)(struct GymChallengerTrainerData* );
 
 static EWRAM_DATA struct GymChallengerTrainerData sGymChallenger = {0};
 struct GymChallengerTrainerData* const challengerPtr = &sGymChallenger;
 
-static struct TrainerMon GenerateTrainerMonc(void);
+static struct TrainerMon GenerateTrainerMon(void);
 static u16 GenerateItem(void);
 static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* challenger);
+static void GenerateGymChallengerTrainerAppearance(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerTrainerClass(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerTrainerPic(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerEncounterMusic(struct GymChallengerTrainerData* challenger);
@@ -39,6 +43,17 @@ static void GenerateGymChallengerPartySize(struct GymChallengerTrainerData* chal
 static void GenerateGymChallengerParty(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerItems(struct GymChallengerTrainerData* challenger);
 static void GenerateGymChallengerAiFlags(struct GymChallengerTrainerData* challenger);
+
+static const GymChallengerGeneratorFunc sGymChallengerGeneratorFuncs[] = 
+{
+    [TRAINER_NAME]            = GenerateGymChallengerTrainerName,
+    [TRAINER_APPEARANCE]      = GenerateGymChallengerTrainerAppearance,
+    [TRAINER_ENCOUNTER_MUSIC] = GenerateGymChallengerEncounterMusic,
+    [TRAINER_PARTY_SIZE]      = GenerateGymChallengerPartySize,
+    [TRAINER_PARTY]           = GenerateGymChallengerParty,
+    [TRAINER_ITEMS]           = GenerateGymChallengerItems,
+    [TRAINER_AI_FLAGS]        = GenerateGymChallengerAiFlags,
+};
 
 static struct TrainerMon GenerateTrainerMon(void)
 {
@@ -63,16 +78,11 @@ static void GenerateGymChallenger(void)
     challenger.stage = LOW;
     challenger.tier = OU;
 
-    GenerateGymChallengerTrainerName(&challenger);
-    challenger.trainerClass = GenerateGymChallengerTrainerClass();
-    challenger.trainerPic = GenerateGymChallengerTrainerPic();
-    challenger.encounterMusic_gender = GenerateGymChallengerEncounterMusic();
-    
-    challenger.partySize = GenerateGymChallengerPartySize();
-    GenerateGymChallengerParty(&challenger);
-    GenerateGymChallengerItems(&challenger);
+    for (int i = TRAINER_NAME; i < TRAINER_GENERATOR_NUM; i++) 
+    {
+        sGymChallengerGeneratorFuncs[i](&challenger);
+    }
 
-    challenger.aiFlags = GenerateGymChallengerAiFlags();
     challenger.doubleBattle = 0;
     challenger.startingStatus = 0;
 
@@ -102,26 +112,36 @@ static struct Trainer GetTrainerDataFromChallenger(struct GymChallengerTrainerDa
     return trainer;
 }
 
+static void GenerateGymChallengerTrainerAppearance(struct GymChallengerTrainerData* challenger)
+{
+    challenger->trainerGender = Random() % 2;
+
+    GenerateGymChallengerTrainerName(challenger);
+    GenerateGymChallengerTrainerClass(challenger);
+}
+
 static void GenerateGymChallengerTrainerName(struct GymChallengerTrainerData* challenger)
 {
-    const u8 name[] = _("CHALLENGER");
+    const u8* const* const names = challenger->trainerGender ? names_female : names_male;
+    u32 count = challenger->trainerGender ? NUM_NAMES_FEMALE : NUM_NAMES_MALE;
 
+    const u8* name = names[Random() % count];
     StringCopy(challenger->trainerName, name);
 }
 
 static void GenerateGymChallengerTrainerClass(struct GymChallengerTrainerData* challenger)
 {
-    challenger->trainerClass = Random() % TRAINER_CLASS_COUNT;
-}
+    u32 count = challenger->trainerGender ? NUM_TRAINER_CLASSES_FEMALE : NUM_TRAINER_CLASSES_MALE;
+    const struct GymChallengerTrainerClass *classes = challenger->trainerGender ? classes_female : classes_male;
+    const struct GymChallengerTrainerClass class = classes[Random() % count];
 
-static void GenerateGymChallengerTrainerPic(struct GymChallengerTrainerData* challenger)
-{
-    challenger->trainerPic = Random() % TRAINER_PIC_COUNT;
+    challenger->trainerClass = class.trainerClass;
+    challenger->trainerPic = class.trainerPic;
 }
 
 static void GenerateGymChallengerEncounterMusic(struct GymChallengerTrainerData* challenger)
 {
-    challenger->encounterMusic =  Random() % TRAINER_ENCOUNTER_MUSIC_COUNT;
+    challenger->encounterMusic_gender =  Random() % TRAINER_ENCOUNTER_MUSIC_COUNT;
 }
 
 static void GenerateGymChallengerPartySize(struct GymChallengerTrainerData* challenger)

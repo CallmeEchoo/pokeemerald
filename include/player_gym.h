@@ -1,6 +1,18 @@
 #ifndef PLAYER_GYM_H
 #define PLAYER_GYM_H
 
+enum TrainerDataFields
+{
+    TRAINER_NAME,
+    TRAINER_APPEARANCE,
+    TRAINER_ENCOUNTER_MUSIC,
+    TRAINER_PARTY_SIZE,
+    TRAINER_PARTY,
+    TRAINER_ITEMS,
+    TRAINER_AI_FLAGS,
+    TRAINER_GENERATOR_NUM,
+};
+
 enum GymChallengerExpertise
 {
     ROOKIE,
@@ -50,6 +62,8 @@ struct GymChallengerTrainerData
     u8 startingStatus:6;    // this trainer starts a battle with a given status. see include/constants/battle.h for values
     u8 mugshotColor;
     u8 partySize;
+
+    u8 trainerGender:1;
 
     enum GymChallengerExpertise expertise;
     enum GymChallengerStage stage;
