@@ -75,8 +75,6 @@ const struct GymChallengerTrainerClass classes_female[] =
 };
 #define NUM_TRAINER_CLASSES_FEMALE ARRAY_COUNT(classes_female)
 
-#define NUM_NAMES_MALE 50
-
 static const u8 name_sven[] = _("SVEN");
 static const u8 name_ivan[] = _("IVAN");
 static const u8 name_omar[] = _("OMAR");
@@ -181,8 +179,8 @@ const u8* const names_male[] =
     name_alex,
     name_sam,
 };
+#define NUM_NAMES_MALE ARRAY_COUNT(names_male)
 
-#define NUM_NAMES_FEMALE 50
 static const u8 name_aisha[] = _("AISHA");
 static const u8 name_ana[] = _("ANA");
 static const u8 name_ayesha[] = _("AYESHA");
@@ -286,5 +284,6 @@ const u8* const names_female[] = {
     name_zara,
     name_zuri,
 };
+#define NUM_NAMES_FEMALE ARRAY_COUNT(names_female)
 
 #endif

@@ -24,7 +24,8 @@ enum GymChallengerExpertise
     EXPERT,
     ELITE,
     LEADER,
-    CHAMPION
+    CHAMPION,
+    NO_EXPERTISE
 };
 
 enum GymChallengerStage
@@ -35,6 +36,7 @@ enum GymChallengerStage
     HIGH,       // 50   < 520   weak third, strong second, strong first
     VERY_HIGH,  // 70   < 560   string third, weak legendaries
     TOP,        // 100  < 800   legendaries, megas, etc.
+    NO_STAGE
 };
 
 enum GymChallengerTier
@@ -46,6 +48,7 @@ enum GymChallengerTier
     NU,
     PU,
     ZU,
+    NO_TIER
 };
 
 struct GymChallengerTrainerData

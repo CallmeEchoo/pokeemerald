@@ -68,15 +68,15 @@ static struct TrainerMon GenerateTrainerMon(void)
 
 static u16 GenerateItem(void)
 {
-    return Random() % ITEMS_COUNT;
+    return ITEM_POTION;
 }
 
 static void GenerateGymChallenger(void)
 {
     struct GymChallengerTrainerData challenger;
-    challenger.expertise = ROOKIE;
-    challenger.stage = LOW;
-    challenger.tier = OU;
+    challenger.expertise = NO_EXPERTISE;
+    challenger.stage = NO_STAGE;
+    challenger.tier = NO_TIER;
 
     for (int i = TRAINER_NAME; i < TRAINER_GENERATOR_NUM; i++) 
     {
