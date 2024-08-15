@@ -2607,4 +2607,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeSwapped = TRUE,
         .cantBeTraced = TRUE,
     },
+
+    [ABILITY_IRONCLAD] = 
+    {
+        .name = _("Ironclad"),
+        .description = COMPOUND_STRING("Steel raises defenses"),
+        .aiRating = 6,
+        .breakable = TRUE,
+    }
 };

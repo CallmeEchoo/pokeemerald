@@ -995,6 +995,10 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 if (moveType == TYPE_GROUND)
                     RETURN_SCORE_MINUS(20);
                 break;
+            case ABILITY_IRONCLAD:
+                if (moveType == TYPE_STEEL)
+                    RETURN_SCORE_MINUS(20);
+                break;
             } // def ability checks
 
             // target partner ability checks & not attacking partner
@@ -2953,6 +2957,13 @@ static s32 AI_DoubleBattle(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 {
                     RETURN_SCORE_PLUS(DECENT_EFFECT);
                 }
+                break;
+            case ABILITY_IRONCLAD:
+                if (moveType == TYPE_STEEL && GetNoOfHitsToKOBattler(battlerAtk, battlerDef, AI_THINKING_STRUCT->movesetIndex) >= 4)
+                {
+                    RETURN_SCORE_PLUS(WEAK_EFFECT);   // only mon with this ability is weak to water so only make it okay if we do very little damage
+                }
+                RETURN_SCORE_MINUS(10);
                 break;
             }
         } // ability checks
