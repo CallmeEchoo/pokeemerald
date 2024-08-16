@@ -3036,9 +3036,17 @@ BattleScript_EffectExplosion::
 	attackcanceler
 	attackstring
 	ppreduce
+	jumpifability BS_ATTACKER, ABILITY_DEMOLITIONIST, BattleScript_EffectExplosionDemolitionist
 	tryexplosion
 	setatkhptozero
 	waitstate
+	goto BattleScript_EffectExplosionEnd
+BattleScript_EffectExplosionDemolitionist:
+	call BattleScript_AbilityPopUp
+	trydemolitionistexplosion
+	healthbarupdate BS_ATTACKER
+	datahpupdate BS_ATTACKER
+BattleScript_EffectExplosionEnd:
 	jumpiffainted BS_TARGET, TRUE, BattleScript_MoveEnd
 	accuracycheck BattleScript_PrintMoveMissed, ACC_CURR_MOVE
 	goto BattleScript_HitFromCritCalc

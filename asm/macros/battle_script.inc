@@ -2510,3 +2510,7 @@
 	printstring STRINGID_EMPTYSTRING3
 	waitmessage 1
 	.endm
+
+	.macro trydemolitionistexplosion
+	callnative BS_TryDemolitionistExplosion
+	.endm

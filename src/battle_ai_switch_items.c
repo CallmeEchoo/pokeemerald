@@ -1894,7 +1894,7 @@ static u32 GetBestMonIntegrated(struct Pokemon *party, int firstId, int lastId, 
                 }
 
                 // If a self destruction move doesn't OHKO, don't factor it into revenge killing
-                if (gMovesInfo[aiMove].effect == EFFECT_EXPLOSION && damageDealt < playerMonHP)
+                if ((gMovesInfo[aiMove].effect == EFFECT_EXPLOSION && AI_DATA->switchinCandidate.battleMon.ability != ABILITY_DEMOLITIONIST) && damageDealt < playerMonHP)
                     continue;
 
                 // Check that mon isn't one shot and set GetBestMonDmg if applicable

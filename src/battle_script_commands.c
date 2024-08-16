@@ -17140,3 +17140,11 @@ void BS_FickleBeamDamageCalculation(void)
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
 }
+
+void BS_TryDemolitionistExplosion(void)
+{
+    NATIVE_ARGS();
+
+    gBattleMoveDamage = (gBattleMons[gBattlerAttacker].maxHP + 1) / 2;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}

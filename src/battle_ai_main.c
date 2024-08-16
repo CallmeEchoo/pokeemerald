@@ -1116,7 +1116,7 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 ADJUST_SCORE(-10);
             break;
         case EFFECT_EXPLOSION:
-            if (!(AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_WILL_SUICIDE))
+            if ((!(AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_WILL_SUICIDE) && aiData->abilities[battlerAtk] != ABILITY_DEMOLITIONIST))
                 ADJUST_SCORE(-2);
 
             if (effectiveness == AI_EFFECTIVENESS_x0)
@@ -2718,7 +2718,9 @@ static s32 AI_TryToFaint(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
     if (gMovesInfo[move].power == 0)
         return score; // can't make anything faint with no power
 
-    if (CanIndexMoveFaintTarget(battlerAtk, battlerDef, movesetIndex, 0) && gMovesInfo[move].effect != EFFECT_EXPLOSION)
+    if (CanIndexMoveFaintTarget(battlerAtk, battlerDef, movesetIndex, 0) 
+     && (gMovesInfo[move].effect != EFFECT_EXPLOSION 
+     || (gBattleMons[battlerAtk].ability == ABILITY_DEMOLITIONIST && gBattleMons[battlerAtk].hp > gBattleMons[battlerAtk].maxHP / 2)))
     {
         if (AI_IsFaster(battlerAtk, battlerDef, move))
             ADJUST_SCORE(FAST_KILL);
@@ -3305,6 +3307,16 @@ static u32 AI_CalcMoveEffectScore(u32 battlerAtk, u32 battlerDef, u32 move)
         if (aiData->holdEffects[battlerAtk] == HOLD_EFFECT_BIG_ROOT && effectiveness >= AI_EFFECTIVENESS_x1)
             ADJUST_SCORE(DECENT_EFFECT);
     case EFFECT_EXPLOSION:
+        if (AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_WILL_SUICIDE && gBattleMons[battlerDef].statStages[STAT_EVASION] < 7)
+        {
+            if (aiData->hpPercents[battlerAtk] < 50 && AI_RandLessThan(128))
+                ADJUST_SCORE(DECENT_EFFECT);
+        }
+        else if (gBattleMons[battlerDef].statStages[STAT_EVASION] < 7 && gBattleMons[battlerAtk].ability == ABILITY_DEMOLITIONIST)
+        {
+            if (aiData->hpPercents[battlerAtk] > 90 && AI_RandLessThan(192))
+                ADJUST_SCORE(DECENT_EFFECT);
+        }
     case EFFECT_MEMENTO:
         if (AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_WILL_SUICIDE && gBattleMons[battlerDef].statStages[STAT_EVASION] < 7)
         {

@@ -456,6 +456,8 @@ static const u8 sText_SpDefense[] = _("Sp. Def");
 static const u8 sText_Accuracy[] = _("accuracy");
 static const u8 sText_Evasiveness[] = _("evasiveness");
 
+static const u8 sText_DemolitionistActivates[] = _("{B_ATK_NAME_WITH_PREFIX} survived the explosion!");
+
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
     sText_HP, sText_Attack, sText_Defense,
@@ -1555,6 +1557,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_ITEMWASUSEDUP - BATTLESTRINGS_TABLE_START] = sText_ItemWasUsedUp,
     [STRINGID_ATTACKERLOSTITSTYPE - BATTLESTRINGS_TABLE_START] = sText_AttackerLostItsType,
     [STRINGID_CLOAKEDINAHARSHLIGHT - BATTLESTRINGS_TABLE_START] = sText_PkmnIsCloakedInAHarshLight,
+    [STRINGID_DEMOLITIONIST - BATTLESTRINGS_TABLE_START] = sText_DemolitionistActivates,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

@@ -2622,4 +2622,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Rock type in Sandstorm"),
         .aiRating = 0 // TODO
     },
+
+    [ABILITY_DEMOLITIONIST] = 
+    {
+        .name = _("Demolitionist"),
+        .description = COMPOUND_STRING("Survives explosion"),
+        .aiRating = 0, // TODO
+    },
 };
