@@ -2629,4 +2629,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Survives explosion"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_SIXTH_SENSE] =
+    {
+        .name = _("Sixth Sense"),
+        .description = COMPOUND_STRING("Can't be crit or flinched"),
+        .aiRating = 0, // TODO
+    }
 };
