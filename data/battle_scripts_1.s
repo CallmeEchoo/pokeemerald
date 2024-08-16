@@ -10048,3 +10048,8 @@ BattleScript_EffectSnow::
 	call BattleScript_CheckPrimalWeather
 	setfieldweather ENUM_WEATHER_SNOW
 	goto BattleScript_MoveWeatherChange
+
+BattleScript_DesertDwellerActivates::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_THIRDTYPEADDED
+	end3

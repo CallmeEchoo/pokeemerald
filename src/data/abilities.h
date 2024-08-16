@@ -2614,5 +2614,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Steel raises defenses"),
         .aiRating = 6,
         .breakable = TRUE,
-    }
+    },
+
+    [ABILITY_DESERT_DWELLER] = 
+    {
+        .name = _("Desert Dweller"),
+        .description = COMPOUND_STRING("Rock type in Sandstorm"),
+        .aiRating = 0 // TODO
+    },
 };

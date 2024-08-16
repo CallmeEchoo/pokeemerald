@@ -846,4 +846,7 @@ extern const u8 BattleScript_DamageToQuarterTargetHP[];
 extern const u8 BattleScript_EffectFickleBeam[];
 extern const u8 BattleScript_FickleBeamDoubled[];
 
+// custom abilites
+extern const u8 BattleScript_DesertDwellerActivates[];
+
 #endif // GUARD_BATTLE_SCRIPTS_H
