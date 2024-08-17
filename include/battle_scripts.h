@@ -848,5 +848,6 @@ extern const u8 BattleScript_FickleBeamDoubled[];
 
 // custom abilites
 extern const u8 BattleScript_DesertDwellerActivates[];
+extern const u8 BattleScript_HoneypotActivates[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

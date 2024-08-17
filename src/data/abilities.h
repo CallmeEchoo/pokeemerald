@@ -2635,5 +2635,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .name = _("Sixth Sense"),
         .description = COMPOUND_STRING("Can't be crit or flinched"),
         .aiRating = 0, // TODO
+    },
+
+    [ABILITY_HONEYPOT] =
+    {
+        .name = _("Honeypot"),
+        .description = COMPOUND_STRING("Lowers evasion every turn"),
+        .aiRating = 0, // TODO
     }
 };

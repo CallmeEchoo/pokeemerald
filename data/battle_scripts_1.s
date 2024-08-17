@@ -10061,3 +10061,57 @@ BattleScript_DesertDwellerActivates::
 	call BattleScript_AbilityPopUp
 	printstring STRINGID_THIRDTYPEADDED
 	end3
+
+BattleScript_HoneypotActivates::
+	savetarget
+	showabilitypopup BS_ATTACKER
+	pause B_WAIT_TIME_LONG
+	destroyabilitypopup
+	setbyte gBattlerTarget, 0
+BattleScript_HoneypotLoop:
+	jumpifbyteequal gBattlerTarget, gBattlerAttacker, BattleScript_HoneypotLoopIncrement
+	jumpiftargetally BattleScript_HoneypotLoopIncrement
+	jumpifabsent BS_TARGET, BattleScript_HoneypotLoopIncrement
+	jumpifstatus2 BS_TARGET, STATUS2_SUBSTITUTE, BattleScript_HoneypotLoopIncrement
+BattleScript_HoneypotEffect:
+	copybyte sBATTLER, gBattlerAttacker
+	setstatchanger STAT_EVASION, 1, TRUE
+	statbuffchange STAT_CHANGE_NOT_PROTECT_AFFECTED | STAT_CHANGE_ALLOW_PTR, BattleScript_HoneypotLoopIncrement
+	setgraphicalstatchangevalues
+	jumpifability BS_TARGET, ABILITY_CONTRARY, BattleScript_HoneypotContrary
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_DECREASE, BattleScript_HoneypotWontDecrease
+	playanimation BS_TARGET, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+	printstring STRINGID_PKMNCUTSEVASIONWITH
+BattleScript_HoneypotEffect_WaitString:
+	waitmessage B_WAIT_TIME_LONG
+	copybyte sBATTLER, gBattlerTarget
+BattleScript_HoneypotLoopIncrement:
+	addbyte gBattlerTarget, 1
+	jumpifbytenotequal gBattlerTarget, gBattlersCount, BattleScript_HoneypotLoop
+	copybyte sBATTLER, gBattlerAttacker
+	destroyabilitypopup
+	restoretarget
+	pause B_WAIT_TIME_MED
+	end3
+
+BattleScript_HoneypotPrevented:
+	copybyte sBATTLER, gBattlerTarget
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_PKMNPREVENTSSTATLOSSWITH
+	goto BattleScript_HoneypotEffect_WaitString
+
+BattleScript_HoneypotWontDecrease:
+	printstring STRINGID_STATSWONTDECREASE
+	goto BattleScript_HoneypotEffect_WaitString
+
+BattleScript_HoneypotContrary:
+	call BattleScript_AbilityPopUpTarget
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_INCREASE, BattleScript_HoneypotContrary_WontIncrease
+	playanimation BS_TARGET, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+	printfromtable gStatUpStringIds
+	goto BattleScript_HoneypotEffect_WaitString
+
+BattleScript_HoneypotContrary_WontIncrease:
+	printstring STRINGID_TARGETSTATWONTGOHIGHER
+	goto BattleScript_HoneypotEffect_WaitString
+	

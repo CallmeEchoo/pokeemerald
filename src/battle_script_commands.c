@@ -14714,7 +14714,7 @@ static void Cmd_pickup(void)
                     }
                 }
             }
-            else if (ability == ABILITY_HONEY_GATHER
+            else if ((ability == ABILITY_HONEY_GATHER || ability == ABILITY_HONEYPOT)   
                 && species != 0
                 && species != SPECIES_EGG
                 && heldItem == ITEM_NONE)

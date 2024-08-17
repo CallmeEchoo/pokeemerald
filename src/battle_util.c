@@ -5151,6 +5151,12 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                     effect++;
                 }
                 break;
+            case ABILITY_HONEYPOT:
+                {
+                    SET_STATCHANGER(STAT_EVASION, 1, TRUE);
+                    BattleScriptPushCursorAndCallback(BattleScript_HoneypotActivates);
+                    effect++;
+                }
             }
         }
         break;
