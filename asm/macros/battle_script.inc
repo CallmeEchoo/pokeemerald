@@ -2514,3 +2514,8 @@
 	.macro trydemolitionistexplosion
 	callnative BS_TryDemolitionistExplosion
 	.endm
+
+	.macro getwrappedby battler:req
+	callnative BS_GetWrappedBy
+	.byte \battler
+	.endm

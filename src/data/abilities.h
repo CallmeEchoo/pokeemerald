@@ -2642,5 +2642,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .name = _("Honeypot"),
         .description = COMPOUND_STRING("Lowers evasion every turn"),
         .aiRating = 0, // TODO
+    },
+
+    [ABILITY_TIGHT_GRIP] =
+    {
+        .name = _("Tight Grip"),
+        .description = COMPOUND_STRING("Powers up binding Moves"),
+        .aiRating = 0, // TODO
     }
 };

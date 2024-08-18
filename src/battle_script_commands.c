@@ -17148,3 +17148,11 @@ void BS_TryDemolitionistExplosion(void)
     gBattleMoveDamage = (gBattleMons[gBattlerAttacker].maxHP + 1) / 2;
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
+
+void BS_GetWrappedBy(void)
+{
+    NATIVE_ARGS(u8 battler);
+
+    gBattleScripting.battler = gBattleStruct->wrappedBy[cmd->battler];
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}

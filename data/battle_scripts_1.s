@@ -7430,10 +7430,17 @@ BattleScript_PrintPayDayMoneyString::
 
 BattleScript_WrapTurnDmg::
 	jumpifability BS_ATTACKER, ABILITY_MAGIC_GUARD, BattleScript_DoTurnDmgEnd
+	getwrappedby BS_ATTACKER
+	jumpifability BS_SCRIPTING, ABILITY_TIGHT_GRIP, BattleScript_TightGripPopUp
+BattleScript_WrapTurnDmg2:
 	playanimation BS_ATTACKER, B_ANIM_TURN_TRAP, sB_ANIM_ARG1
 	printstring STRINGID_PKMNHURTBY
 	waitmessage B_WAIT_TIME_LONG
 	goto BattleScript_DoTurnDmg
+
+BattleScript_TightGripPopUp:
+	call BattleScript_AbilityPopUpScripting
+	goto BattleScript_WrapTurnDmg2
 
 BattleScript_WrapEnds::
 	printstring STRINGID_PKMNFREEDFROM

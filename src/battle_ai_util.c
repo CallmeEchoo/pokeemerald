@@ -2402,9 +2402,12 @@ static u32 GetTrapDamage(u32 battlerId)
     // ai has no knowledge about turns remaining
     u32 damage = 0;
     u32 holdEffect = AI_DATA->holdEffects[gBattleStruct->wrappedBy[battlerId]];
+    u32 ability = AI_DATA->abilities[gBattleStruct->wrappedBy[battlerId]];
     if (gBattleMons[battlerId].status2 & STATUS2_WRAPPED)
     {
-        if (holdEffect == HOLD_EFFECT_BINDING_BAND)
+        if (holdEffect == HOLD_EFFECT_BINDING_BAND && ability == ABILITY_TIGHT_GRIP)
+            damage = GetNonDynamaxMaxHP(battlerId) / (B_BINDING_DAMAGE >= GEN_6 ? 4 : 6);
+        else if (holdEffect == HOLD_EFFECT_BINDING_BAND || ability == ABILITY_TIGHT_GRIP)
             damage = GetNonDynamaxMaxHP(battlerId) / (B_BINDING_DAMAGE >= GEN_6 ? 6 : 8);
         else
             damage = GetNonDynamaxMaxHP(battlerId) / (B_BINDING_DAMAGE >= GEN_6 ? 8 : 16);
