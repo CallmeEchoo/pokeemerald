@@ -6365,6 +6365,24 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
             break;
         }
         break;
+    case ABILITYEFFECT_STARTTURN:
+        gLastUsedAbility = GetBattlerAbility(battler);
+        switch (gLastUsedAbility)
+        {
+            case ABILITY_SUPER_COMPUTER:
+            {
+                if (!BattlerHasAi(battler))
+                {
+                    gBattleScripting.battler = BATTLE_OPPOSITE(battler);
+                    u16 moveIdOpponentA = GetAIChosenMove(gBattleScripting.battler);
+                    StringCopy(gBattleTextBuff1, gMovesInfo[moveIdOpponentA].name);
+                    BattleScriptPushCursorAndCallback(BattleScript_SupercomputerActivates);
+                    effect++;
+                }
+                break;
+            }
+        }
+        break;
     }
 
     if (effect && gLastUsedAbility != 0xFFFF)

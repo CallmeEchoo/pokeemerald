@@ -2657,4 +2657,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Charges at foe quickly"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_SUPER_COMPUTER] =
+    {
+        .name = _("Supercomputer"),
+        .description = COMPOUND_STRING("Calculates opponents move"),
+        .aiRating = 0, // TODO
+    },
 };

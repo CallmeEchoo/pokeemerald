@@ -98,6 +98,8 @@ static void SpriteCB_BounceEffect(struct Sprite *sprite);
 static void BattleStartClearSetData(void);
 static void DoBattleIntro(void);
 static void TryDoEventsBeforeFirstTurn(void);
+static void HandleTurnStartAbilities(void);
+static void HandleAiCalculations(void);
 static void HandleTurnActionSelectionState(void);
 static void RunTurnActionsFunctions(void);
 static void SetActionsAndBattlersTurnOrder(void);
@@ -3912,7 +3914,7 @@ static void TryDoEventsBeforeFirstTurn(void)
         *(&gBattleStruct->absentBattlerFlags) = gAbsentBattlerFlags;
         BattlePutTextOnWindow(gText_EmptyString3, B_WIN_MSG);
         AssignUsableGimmicks();
-        gBattleMainFunc = HandleTurnActionSelectionState;
+        gBattleMainFunc = HandleAiCalculations;
         ResetSentPokesToOpponentValue();
 
         for (i = 0; i < BATTLE_COMMUNICATION_ENTRIES_COUNT; i++)
@@ -4037,7 +4039,7 @@ void BattleTurnPassed(void)
     AssignUsableGimmicks();
     SetShellSideArmCategory();
     SetAiLogicDataForTurn(AI_DATA); // get assumed abilities, hold effects, etc of all battlers
-    gBattleMainFunc = HandleTurnActionSelectionState;
+    gBattleMainFunc = HandleAiCalculations;
 
     if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
         BattleScriptExecute(BattleScript_PalacePrintFlavorText);
@@ -4166,6 +4168,40 @@ enum
     STATE_SELECTION_SCRIPT_MAY_RUN
 };
 
+static void HandleTurnStartAbilities(void)
+{
+    while (gBattleStruct->switchInBattlerCounter < gBattlersCount) // From fastest to slowest
+    {
+        gBattlerAttacker = gBattlerByTurnOrder[gBattleStruct->switchInBattlerCounter++];
+        if (AbilityBattleEffects(ABILITYEFFECT_STARTTURN, gBattlerAttacker, 0, 0, 0))
+            return;
+    }
+    gBattleStruct->switchInBattlerCounter = 0;
+
+    gBattleMainFunc = HandleTurnActionSelectionState;
+}
+
+static void HandleAiCalculations(void)
+{
+    s32 battler;
+
+    for (battler = 0; battler < gBattlersCount; battler++)
+    {
+        // Do AI score computations here so we can use them in AI_TrySwitchOrUseItem
+        if ((gBattleTypeFlags & BATTLE_TYPE_HAS_AI || IsWildMonSmart())
+                && (BattlerHasAi(battler) && !(gBattleTypeFlags & BATTLE_TYPE_PALACE)))
+        {
+            if (AI_THINKING_STRUCT->aiFlags[battler] & AI_FLAG_RISKY) // Risky AI switches aggressively even mid battle
+                AI_DATA->mostSuitableMonId[battler] = GetMostSuitableMonToSwitchInto(battler, TRUE);
+            else
+                AI_DATA->mostSuitableMonId[battler] = GetMostSuitableMonToSwitchInto(battler, FALSE);
+            gBattleStruct->aiMoveOrAction[battler] = ComputeBattleAiScores(battler);
+        }
+    }
+
+    gBattleMainFunc = HandleTurnStartAbilities;
+}
+
 static void HandleTurnActionSelectionState(void)
 {
     s32 i, battler;
@@ -4180,16 +4216,7 @@ static void HandleTurnActionSelectionState(void)
             RecordedBattle_CopyBattlerMoves(battler);
             gBattleCommunication[battler] = STATE_BEFORE_ACTION_CHOSEN;
 
-            // Do AI score computations here so we can use them in AI_TrySwitchOrUseItem
-            if ((gBattleTypeFlags & BATTLE_TYPE_HAS_AI || IsWildMonSmart())
-                    && (BattlerHasAi(battler) && !(gBattleTypeFlags & BATTLE_TYPE_PALACE)))
-            {
-                if (AI_THINKING_STRUCT->aiFlags[battler] & AI_FLAG_RISKY) // Risky AI switches aggressively even mid battle
-                    AI_DATA->mostSuitableMonId[battler] = GetMostSuitableMonToSwitchInto(battler, TRUE);
-                else
-                    AI_DATA->mostSuitableMonId[battler] = GetMostSuitableMonToSwitchInto(battler, FALSE);
-                gBattleStruct->aiMoveOrAction[battler] = ComputeBattleAiScores(battler);
-            }
+            HandleTurnStartAbilities();
             // fallthrough
         case STATE_BEFORE_ACTION_CHOSEN: // Choose an action.
             *(gBattleStruct->monToSwitchIntoId + battler) = PARTY_SIZE;
@@ -4232,6 +4259,7 @@ static void HandleTurnActionSelectionState(void)
                     }
                 }
             }
+
             break;
         case STATE_WAIT_ACTION_CHOSEN: // Try to perform an action.
             if (!(gBattleControllerExecFlags & ((gBitTable[battler]) | (0xF << 28) | (gBitTable[battler] << 4) | (gBitTable[battler] << 8) | (gBitTable[battler] << 12))))

@@ -10122,3 +10122,9 @@ BattleScript_HoneypotContrary_WontIncrease:
 	printstring STRINGID_TARGETSTATWONTGOHIGHER
 	goto BattleScript_HoneypotEffect_WaitString
 	
+BattleScript_SupercomputerActivates::
+	copybyte gBattlerAbility, gBattlerAttacker
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_PKMNCALCSMOVE
+	waitmessage B_WAIT_TIME_LONG
+	end3
