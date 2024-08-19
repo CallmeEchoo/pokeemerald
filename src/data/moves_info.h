@@ -1023,6 +1023,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_FOCUS_ENERGY, COMBO_STARTER_HARDEN},
         .battleAnimScript = Move_TAKE_DOWN,
+        .chargeMove = TRUE,
     },
 
     [MOVE_THRASH] =
@@ -3276,6 +3277,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_RAIN_DANCE},
         .battleAnimScript = Move_WATERFALL,
+        .chargeMove = TRUE,
     },
 
     [MOVE_CLAMP] =
@@ -4418,6 +4420,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_SUNNY_DAY},
         .battleAnimScript = Move_FLAME_WHEEL,
+        .chargeMove = TRUE,
     },
 
     [MOVE_SNORE] =
@@ -9912,6 +9915,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_SUNNY_DAY},
         .battleAnimScript = Move_FLARE_BLITZ,
+        .chargeMove = TRUE,
     },
 
     [MOVE_FORCE_PALM] =
@@ -10370,6 +10374,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = COMBO_STARTER_BRAVE_BIRD,
         .contestComboMoves = {0},
         .battleAnimScript = Move_BRAVE_BIRD,
+        .chargeMove = TRUE,
     },
 
     [MOVE_EARTH_POWER] =
@@ -10445,6 +10450,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_GIGA_IMPACT,
+        .chargeMove = TRUE,
     },
 
     [MOVE_NASTY_PLOT] =
@@ -12209,6 +12215,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_FLAME_CHARGE,
+        .chargeMove = TRUE,
     },
 
     [MOVE_COIL] =
@@ -13161,6 +13168,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_WILD_CHARGE,
+        .chargeMove = TRUE,
     },
 
     [MOVE_DRILL_RUN] =
@@ -13518,6 +13526,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_HEAD_CHARGE,
+        .chargeMove = TRUE,
     },
 
     [MOVE_GEAR_GRIND] =
@@ -15691,6 +15700,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_HIGH_HORSEPOWER,
+        .chargeMove = TRUE,
     },
 
     [MOVE_STRENGTH_SAP] =

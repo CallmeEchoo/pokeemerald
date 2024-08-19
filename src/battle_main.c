@@ -4831,7 +4831,13 @@ s8 GetMovePriority(u32 battler, u16 move)
         priority++;
     }
     else if (ability == ABILITY_TRIAGE && IsHealingMove(move))
+    {
         priority += 3;
+    }
+    else if (ability == ABILITY_BLAZINGLY_FAST && gMovesInfo[move].chargeMove)
+    {
+        priority++;
+    }
 
     if (gProtectStructs[battler].quash)
         priority = -8;

@@ -2649,5 +2649,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .name = _("Tight Grip"),
         .description = COMPOUND_STRING("Powers up binding Moves"),
         .aiRating = 0, // TODO
-    }
+    },
+
+    [ABILITY_BLAZINGLY_FAST] =
+    {
+        .name = _("Blazingly Fast"),
+        .description = COMPOUND_STRING("Charges at foe quickly"),
+        .aiRating = 0, // TODO
+    },
 };
