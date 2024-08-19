@@ -6319,12 +6319,10 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
             }
             break;
         case ABILITY_DESERT_DWELLER:
-            DebugPrintfLevel(MGBA_LOG_DEBUG, "HERE");
             if (IsBattlerWeatherAffected(battler, B_WEATHER_SANDSTORM)
              && !IS_BATTLER_OF_TYPE(battler, TYPE_ROCK)
              && GetActiveGimmick(battler) != GIMMICK_TERA)
             {
-                DebugPrintfLevel(MGBA_LOG_DEBUG, "%d", battler);
                 gBattleMons[battler].types[2] = TYPE_ROCK;
                 PREPARE_TYPE_BUFFER(gBattleTextBuff1, TYPE_ROCK);
                 gBattlerTarget = battler; // hacky. should just make new string with proper placeholder but too lazy
