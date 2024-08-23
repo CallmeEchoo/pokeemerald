@@ -2664,4 +2664,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Calculates opponents move"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_CURSED_DOLL] =
+    {
+        .name = _("Cursed Doll"),
+        .description = COMPOUND_STRING("Heals from cursing others"),
+        .aiRating = 0, // TODO
+    },
 };

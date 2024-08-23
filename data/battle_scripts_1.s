@@ -4237,10 +4237,16 @@ BattleScript_DoGhostCurse::
 	waitanimation
 	healthbarupdate BS_ATTACKER
 	datahpupdate BS_ATTACKER
+	jumpifability BS_ATTACKER, ABILITY_CURSED_DOLL, BattleScript_GhostCurseCursedDoll
 	printstring STRINGID_PKMNLAIDCURSE
+BattleScript_GhostCurseEnd:
 	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_ATTACKER
 	goto BattleScript_MoveEnd
+
+BattleScript_GhostCurseCursedDoll:
+	printstring STRINGID_PKMNHEALSWITHCURSE
+	goto BattleScript_GhostCurseEnd
 
 BattleScript_EffectMatBlock::
 	attackcanceler

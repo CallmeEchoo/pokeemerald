@@ -1610,7 +1610,7 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 if (gBattleMons[battlerDef].status2 & STATUS2_CURSED
                   || DoesPartnerHaveSameMoveEffect(BATTLE_PARTNER(battlerAtk), battlerDef, move, aiData->partnerMove))
                     ADJUST_SCORE(-10);
-                else if (aiData->hpPercents[battlerAtk] <= 50)
+                else if (aiData->hpPercents[battlerAtk] <= 50 && aiData->abilities[battlerAtk] != ABILITY_CURSED_DOLL)
                     ADJUST_SCORE(-6);
             }
             else // regular curse
@@ -3727,6 +3727,11 @@ static u32 AI_CalcMoveEffectScore(u32 battlerAtk, u32 battlerDef, u32 move)
             if (IsBattlerTrapped(battlerDef, TRUE))
                 ADJUST_SCORE(GOOD_EFFECT);
             else
+                ADJUST_SCORE(WEAK_EFFECT);
+
+            if (aiData->abilities[battlerAtk] == ABILITY_CURSED_DOLL && aiData->hpPercents[battlerAtk] < 70)
+                ADJUST_SCORE(GOOD_EFFECT);
+            else if (aiData->abilities[battlerAtk] == ABILITY_CURSED_DOLL)
                 ADJUST_SCORE(WEAK_EFFECT);
         }
         else

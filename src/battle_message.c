@@ -459,6 +459,7 @@ static const u8 sText_Evasiveness[] = _("evasiveness");
 static const u8 sText_DemolitionistActivates[] = _("{B_ATK_NAME_WITH_PREFIX} survived the explosion!");
 static const u8 sText_PkmnCutsEvasionWith[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_SCR_ACTIVE_ABILITY}\nlowers {B_DEF_NAME_WITH_PREFIX}'s evasiveness!");
 static const u8 sText_PkmnCalcsMove[] = _("{B_ATK_NAME_WITH_PREFIX} calculates the\nopponents move...\p{B_SCR_ACTIVE_NAME_WITH_PREFIX} will use {B_BUFF1}\p");
+static const u8 sText_PkmnHealsWithCurse[] = _("{B_ATK_NAME_WITH_PREFIX} draws energy from\nthe CURSE it laid on {B_DEF_NAME_WITH_PREFIX}");
 
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
@@ -1562,6 +1563,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_DEMOLITIONIST - BATTLESTRINGS_TABLE_START] = sText_DemolitionistActivates,
     [STRINGID_PKMNCUTSEVASIONWITH - BATTLESTRINGS_TABLE_START] = sText_PkmnCutsEvasionWith,
     [STRINGID_PKMNCALCSMOVE - BATTLESTRINGS_TABLE_START] = sText_PkmnCalcsMove,
+    [STRINGID_PKMNHEALSWITHCURSE - BATTLESTRINGS_TABLE_START] = sText_PkmnHealsWithCurse,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

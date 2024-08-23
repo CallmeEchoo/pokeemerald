@@ -13278,9 +13278,22 @@ static void Cmd_cursetarget(void)
     else
     {
         gBattleMons[gBattlerTarget].status2 |= STATUS2_CURSED;
-        gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 2;
-        if (gBattleMoveDamage == 0)
-            gBattleMoveDamage = 1;
+        if (GetBattlerAbility(gBattlerAttacker) != ABILITY_CURSED_DOLL)
+        {
+            gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 2;
+            if (gBattleMoveDamage == 0)
+                gBattleMoveDamage = 1;
+            
+            DebugPrintfLevel(MGBA_LOG_DEBUG, "non cursed doll: %d", gBattleMoveDamage);
+        }
+        else
+        {
+            gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 3 * -1;
+            if (gBattleMoveDamage == 0)
+                gBattleMoveDamage = -1;
+
+            DebugPrintfLevel(MGBA_LOG_DEBUG, "cursed doll: %d", gBattleMoveDamage);
+        }
 
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
