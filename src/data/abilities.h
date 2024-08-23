@@ -2671,4 +2671,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Heals from cursing others"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_FLAMING_FIST] =
+    {
+        .name = _("Flaming Fist"),
+        .description = COMPOUND_STRING("Burns foe on contact"),
+        .aiRating = 0, // TODO
+    },
 };
