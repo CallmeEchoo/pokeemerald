@@ -6058,6 +6058,28 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 effect++;
             }
             break;
+        case ABILITY_BITE_DOWN:
+            if (!(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)
+             && IsBattlerAlive(gBattlerTarget)
+             && !gProtectStructs[gBattlerAttacker].confusionSelfDmg
+             && TARGET_TURN_DAMAGED
+             && gMovesInfo[move].bitingMove
+             && !(gBattleMons[gBattlerTarget].status2 & STATUS2_WRAPPED))
+            {
+                DebugPrintfLevel(MGBA_LOG_DEBUG, "here");
+                gBattleMons[gBattlerTarget].status2 |= STATUS2_WRAPPED;
+                if (GetBattlerHoldEffect(gBattlerAttacker, TRUE) == HOLD_EFFECT_GRIP_CLAW)
+                    gDisableStructs[gBattlerTarget].wrapTurns = B_BINDING_TURNS >= GEN_5 ? 7 : 5;
+                else
+                    gDisableStructs[gBattlerTarget].wrapTurns = B_BINDING_TURNS >= GEN_5 ? (Random() % 2) + 4 : (Random() % 4) + 2;
+
+                gBattleStruct->wrappedMove[gBattlerTarget] = move;
+                gBattleStruct->wrappedBy[gBattlerAttacker] = gBattlerAttacker;
+
+                BattleScriptPushCursor();
+                gBattlescriptCurrInstr = BattleScript_TrappedByBiteDown;
+                effect++;
+            }
         }
         break;
     case ABILITYEFFECT_MOVE_END_OTHER: // Abilities that activate on *another* battler's moveend: Dancer, Soul-Heart, Receiver, Symbiosis

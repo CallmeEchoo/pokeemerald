@@ -2678,4 +2678,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Burns foe on contact"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_BITE_DOWN] =
+    {
+        .name = _("Bite Down"),
+        .description = COMPOUND_STRING("Biting moves trap foe"),
+        .aiRating = 0, // TODO
+    },
 };

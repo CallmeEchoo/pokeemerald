@@ -10134,3 +10134,9 @@ BattleScript_SupercomputerActivates::
 	printstring STRINGID_PKMNCALCSMOVE
 	waitmessage B_WAIT_TIME_LONG
 	end3
+
+BattleScript_TrappedByBiteDown::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_TRAPPEDBYBITEDOWN
+	waitmessage B_WAIT_TIME_LONG
+	return

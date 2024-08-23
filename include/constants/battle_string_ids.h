@@ -717,8 +717,9 @@
 #define STRINGID_PKMNCUTSEVASIONWITH                  715
 #define STRINGID_PKMNCALCSMOVE                        716
 #define STRINGID_PKMNHEALSWITHCURSE                   717
+#define STRINGID_TRAPPEDBYBITEDOWN                    718
 
-#define BATTLESTRINGS_COUNT                           718
+#define BATTLESTRINGS_COUNT                           719
 
 // This is the string id that gBattleStringsTable starts with.
 // String ids before this (e.g. STRINGID_INTROMSG) are not in the table,
@@ -1016,7 +1017,8 @@
 #define B_MSG_WRAPPED_INFESTATION  7
 #define B_MSG_WRAPPED_SNAP_TRAP    8
 #define B_MSG_WRAPPED_THUNDER_CAGE 9
-#define NUM_TRAPPING_MOVES         10
+#define B_MSG_WRAPPED_BITE_DOWN    10
+#define NUM_TRAPPING_MOVES         11
 
 // z effects
 #define B_MSG_Z_RESET_STATS   0
