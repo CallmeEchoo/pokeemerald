@@ -2594,6 +2594,7 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
               ||  gDisableStructs[battlerAtk].magnetRiseTimer != 0
               || aiData->holdEffects[battlerAtk] == HOLD_EFFECT_IRON_BALL
               || gStatuses3[battlerAtk] & (STATUS3_ROOTED | STATUS3_MAGNET_RISE | STATUS3_SMACKED_DOWN)
+              || IsAbilityOnField(ABILITY_MAXWELLS_FLAW)
               || !IsBattlerGrounded(battlerAtk))
                 ADJUST_SCORE(-10);
             break;

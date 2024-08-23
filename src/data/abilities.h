@@ -2685,4 +2685,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Biting moves trap foe"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_MAXWELLS_FLAW] =
+    {
+        .name = _("Maxwell's Flaw"),
+        .description = COMPOUND_STRING("Raises all battlers"),
+        .aiRating = 0, // TODO
+    },
 };

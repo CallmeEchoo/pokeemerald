@@ -9155,7 +9155,7 @@ static void Cmd_various(void)
         // Cancel all multiturn moves of IN_AIR Pokemon except those being targeted by Sky Drop.
         if (gStatuses3[battler] & STATUS3_ON_AIR && !(gStatuses3[battler] & STATUS3_SKY_DROPPED))
             CancelMultiTurnMoves(battler);
-
+        
         gStatuses3[battler] &= ~(STATUS3_MAGNET_RISE | STATUS3_TELEKINESIS | STATUS3_ON_AIR | STATUS3_SKY_DROPPED);
         break;
     }

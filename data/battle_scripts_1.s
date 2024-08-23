@@ -2731,6 +2731,7 @@ BattleScript_EffectGravitySuccess::
 BattleScript_GravityLoop:
 	movevaluescleanup
 	jumpifstatus3 BS_TARGET, STATUS3_ON_AIR | STATUS3_MAGNET_RISE | STATUS3_TELEKINESIS, BattleScript_GravityLoopDrop
+	jumpifabilitypresent ABILITY_MAXWELLS_FLAW, BattleScript_GravityLoopDrop
 	goto BattleScript_GravityLoopEnd
 BattleScript_GravityLoopDrop:
 	bringdownairbornebattler BS_TARGET
@@ -10140,3 +10141,9 @@ BattleScript_TrappedByBiteDown::
 	printstring STRINGID_TRAPPEDBYBITEDOWN
 	waitmessage B_WAIT_TIME_LONG
 	return
+
+BattleScript_MaxwellsFlawActivates::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_MAXWELLSFLAWACTIVATES
+	waitmessage B_WAIT_TIME_LONG
+	end3

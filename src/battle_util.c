@@ -4964,6 +4964,13 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 effect++;
             }
             break;
+        case ABILITY_MAXWELLS_FLAW:
+            if (!(gFieldStatuses & STATUS_FIELD_GRAVITY))
+            {
+                BattleScriptPushCursorAndCallback(BattleScript_MaxwellsFlawActivates);
+                effect++;
+            }
+            break;
         }
         break;
     case ABILITYEFFECT_ENDTURN:
@@ -6513,6 +6520,9 @@ u32 GetBattlerAbility(u32 battler)
         return ABILITY_NONE;
 
     if (noAbilityShield && CanBreakThroughAbility(gBattlerAttacker, battler, gBattleMons[gBattlerAttacker].ability))
+        return ABILITY_NONE;
+
+    if (gBattleMons[battler].ability == ABILITY_MAXWELLS_FLAW && gFieldStatuses & STATUS_FIELD_GRAVITY)
         return ABILITY_NONE;
 
     return gBattleMons[battler].ability;
@@ -8706,6 +8716,8 @@ static bool32 IsBattlerGrounded2(u32 battler, bool32 considerInverse)
         return FALSE;
     if (IS_BATTLER_OF_TYPE(battler, TYPE_FLYING) && (!considerInverse || !FlagGet(B_FLAG_INVERSE_BATTLE)))
         return FALSE;
+    if (IsAbilityOnField(ABILITY_MAXWELLS_FLAW))
+        return FALSE;
     return TRUE;
 }
 
@@ -9725,7 +9737,7 @@ static inline u32 CalcAttackStat(u32 move, u32 battlerAtk, u32 battlerDef, u32 m
 
     if (IsAbilityOnField(ABILITY_TABLETS_OF_RUIN) && atkAbility != ABILITY_TABLETS_OF_RUIN && IS_MOVE_PHYSICAL(move))
         modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(0.75));
-
+        
     // attacker's hold effect
     switch (holdEffectAtk)
     {

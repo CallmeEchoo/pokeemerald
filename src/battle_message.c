@@ -461,6 +461,7 @@ static const u8 sText_PkmnCutsEvasionWith[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}
 static const u8 sText_PkmnCalcsMove[] = _("{B_ATK_NAME_WITH_PREFIX} calculates the\nopponents move...\p{B_SCR_ACTIVE_NAME_WITH_PREFIX} will use {B_BUFF1}\p");
 static const u8 sText_PkmnHealsWithCurse[] = _("{B_ATK_NAME_WITH_PREFIX} draws energy from\nthe CURSE it laid on {B_DEF_NAME_WITH_PREFIX}");
 static const u8 sText_TrappedByBiteDown[] = _("{B_ATK_NAME_WITH_PREFIX} trapped {B_DEF_NAME_WITH_PREFIX}\nwith its strong jaw!");
+static const u8 sText_MaxwellsFlawActivates[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} weird field\nlets all {PKMN} float");
 
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
@@ -1566,6 +1567,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_PKMNCALCSMOVE - BATTLESTRINGS_TABLE_START] = sText_PkmnCalcsMove,
     [STRINGID_PKMNHEALSWITHCURSE - BATTLESTRINGS_TABLE_START] = sText_PkmnHealsWithCurse,
     [STRINGID_TRAPPEDBYBITEDOWN - BATTLESTRINGS_TABLE_START] = sText_TrappedByBiteDown,
+    [STRINGID_MAXWELLSFLAWACTIVATES - BATTLESTRINGS_TABLE_START] = sText_MaxwellsFlawActivates,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

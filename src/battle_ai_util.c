@@ -1360,6 +1360,8 @@ bool32 AI_IsBattlerGrounded(u32 battlerId)
         return FALSE;
     else if (IS_BATTLER_OF_TYPE(battlerId, TYPE_FLYING))
         return FALSE;
+    else if (IsAbilityOnField(ABILITY_MAXWELLS_FLAW))
+        return FALSE;
     else
         return TRUE;
 }
