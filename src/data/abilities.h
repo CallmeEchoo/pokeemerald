@@ -2720,4 +2720,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Only wants to attack"), 
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_FROSTY_SPIRIT] =
+    {
+        .name = _("Frosty Spirit"),
+        .description = COMPOUND_STRING("Ghost moves may freeze"),
+        .aiRating = 0, // TODO
+    },
 };
