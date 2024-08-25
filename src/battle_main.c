@@ -3480,6 +3480,7 @@ static void DoBattleIntro(void)
                 gBattleMons[battler].status2 = 0;
                 for (i = 0; i < NUM_BATTLE_STATS; i++)
                     gBattleMons[battler].statStages[i] = DEFAULT_STAT_STAGE;
+
                 #if TESTING
                 if (gTestRunnerEnabled)
                 {

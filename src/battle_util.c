@@ -1451,6 +1451,16 @@ u32 TrySetCantSelectMoveBattleScript(u32 battler)
             limitations++;
         }
     }
+    else if ((GetBattlerAbility(battler) == ABILITY_BRUTE) && IS_MOVE_STATUS(move) && gMovesInfo[move].effect != EFFECT_ME_FIRST)
+    {
+        if ((GetActiveGimmick(gBattlerAttacker) == GIMMICK_DYNAMAX))
+            gCurrentMove = MOVE_MAX_GUARD;
+        else
+            gCurrentMove = move;
+
+        gSelectionBattleScripts[battler] = BattleScript_SelectingNotAllowedMoveBrute;
+        limitations++;
+    }
     if (DYNAMAX_BYPASS_CHECK && (GetBattlerAbility(battler) == ABILITY_GORILLA_TACTICS) && *choicedMove != MOVE_NONE
               && *choicedMove != MOVE_UNAVAILABLE && *choicedMove != move)
     {
@@ -1561,6 +1571,9 @@ u8 CheckMoveLimitations(u32 battler, u8 unusableMoves, u16 check)
             unusableMoves |= gBitTable[i];
         // Can't Use Twice flag
         else if (check & MOVE_LIMITATION_CANT_USE_TWICE && gMovesInfo[move].cantUseTwice && move == gLastResultingMoves[battler])
+            unusableMoves |= gBitTable[i];
+        // Brute
+        else if (check & MOVE_LIMITATION_BRUTE && GetBattlerAbility(battler) == ABILITY_BRUTE && IS_MOVE_STATUS(move) && gMovesInfo[move].effect != EFFECT_ME_FIRST)
             unusableMoves |= gBitTable[i];
     }
     return unusableMoves;
@@ -4975,6 +4988,13 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
             {
                 BattleScriptPushCursorAndCallback(BattleScript_MaxwellsFlawActivates);
                 effect++;
+            }
+            break;
+        case ABILITY_BRUTE:
+            if (!gSpecialStatuses[battler].switchInAbilityDone
+             && GetActiveGimmick(battler) != GIMMICK_DYNAMAX)
+            {
+                // battlescript
             }
             break;
         }
@@ -9914,6 +9934,10 @@ static inline u32 CalcDefenseStat(u32 move, u32 battlerAtk, u32 battlerDef, u32 
     case ABILITY_PURIFYING_SALT:
         if (moveType == TYPE_GHOST)
             modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(2.0));
+        break;
+    case ABILITY_BRUTE:
+        if (usesDefStat)
+            modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
         break;
     }
 

@@ -10168,3 +10168,7 @@ BattleScript_ResonantBodyActivates::
 	printstring STRINGID_BEINGHITCHARGEDPKMNWITHPOWER
 	waitmessage B_WAIT_TIME_LONG
 	return
+
+BattleScript_SelectingNotAllowedMoveBrute::
+	printselectionstring STRINGID_BRUTEDOESNTALLOW
+	endselectionscript

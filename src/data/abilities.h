@@ -2713,4 +2713,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Returns sound doubled"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_BRUTE] =
+    {
+        .name = _("Brute"),
+        .description = COMPOUND_STRING("Only wants to attack"), 
+        .aiRating = 0, // TODO
+    },
 };

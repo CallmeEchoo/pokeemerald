@@ -854,5 +854,6 @@ extern const u8 BattleScript_TrappedByBiteDown[];
 extern const u8 BattleScript_MaxwellsFlawActivates[];
 extern const u8 BattleScript_CaltropsActivates[];
 extern const u8 BattleScript_ResonantBodyActivates[];
+extern const u8 BattleScript_SelectingNotAllowedMoveBrute[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H
