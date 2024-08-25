@@ -2692,4 +2692,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Raises all battlers"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_COAL_POWERED] =
+    {
+        .name = _("Coal Powered"),
+        .description = COMPOUND_STRING("Uses coal for power"),
+        .aiRating = 0, // TODO
+    },
 };

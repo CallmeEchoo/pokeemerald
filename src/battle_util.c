@@ -8958,7 +8958,8 @@ static inline u32 CalcMoveBasePower(u32 move, u32 battlerAtk, u32 battlerDef, u3
         basePower = GetFlingPowerFromItemId(gBattleMons[battlerAtk].item);
         break;
     case EFFECT_ERUPTION:
-        basePower = gBattleMons[battlerAtk].hp * basePower / gBattleMons[battlerAtk].maxHP;
+        if (GetBattlerAbility(battlerAtk) != ABILITY_COAL_POWERED || gBattleMons[battlerAtk].item != ITEM_CHARCOAL)
+            basePower = gBattleMons[battlerAtk].hp * basePower / gBattleMons[battlerAtk].maxHP;
         break;
     case EFFECT_FLAIL:
         hpFraction = GetScaledHPFraction(gBattleMons[battlerAtk].hp, gBattleMons[battlerAtk].maxHP, 48);
