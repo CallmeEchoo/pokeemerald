@@ -17169,3 +17169,13 @@ void BS_GetWrappedBy(void)
     gBattleScripting.battler = gBattleStruct->wrappedBy[cmd->battler];
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
+
+void BS_SetSoundCharge(void)
+{
+    NATIVE_ARGS(u8 battler);
+
+    u8 battler = GetBattlerForBattleScript(cmd->battler);
+    gStatuses4[battler] |= STATUS4_SOUND_CHARGED;
+    gDisableStructs[battler].soundCharged = 2;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}

@@ -2707,4 +2707,10 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .aiRating = 0, // TODO
     },
 
+    [ABILITY_RESONANT_BODY] =
+    {
+        .name = _("Resonant Body"),
+        .description = COMPOUND_STRING("Returns sound doubled"),
+        .aiRating = 0, // TODO
+    },
 };

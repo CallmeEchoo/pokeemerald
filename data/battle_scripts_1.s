@@ -10161,3 +10161,10 @@ BattleScript_CaltropsRet:
 	copybyte gBattlerTarget, gBattlerAttacker
 	copybyte gBattlerAttacker, sBATTLER
 	return
+
+BattleScript_ResonantBodyActivates::
+	call BattleScript_AbilityPopUp
+	setsoundcharge BS_TARGET
+	printstring STRINGID_BEINGHITCHARGEDPKMNWITHPOWER
+	waitmessage B_WAIT_TIME_LONG
+	return

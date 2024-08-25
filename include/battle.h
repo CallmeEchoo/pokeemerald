@@ -145,13 +145,14 @@ struct DisableStruct
     u8 spikesDone:1;
     u8 toxicSpikesDone:1;
     u8 stickyWebDone:1;
-    u8 stealthRockDone:1;
+    u8 stealthRockDone:1; // end of byte
     u8 syrupBombTimer;
     u8 syrupBombIsShiny:1;
     u8 steelSurgeDone:1;
     u8 weatherAbilityDone:1;
     u8 terrainAbilityDone:1;
     u8 usedProteanLibero:1;
+    u8 soundCharged:3;
 };
 
 struct ProtectStruct

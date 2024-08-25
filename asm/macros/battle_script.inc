@@ -2519,3 +2519,8 @@
 	callnative BS_GetWrappedBy
 	.byte \battler
 	.endm
+
+	.macro setsoundcharge battler:req
+	callnative BS_SetSoundCharge
+	.byte \battler
+	.endm
