@@ -852,5 +852,6 @@ extern const u8 BattleScript_HoneypotActivates[];
 extern const u8 BattleScript_SupercomputerActivates[];
 extern const u8 BattleScript_TrappedByBiteDown[];
 extern const u8 BattleScript_MaxwellsFlawActivates[];
+extern const u8 BattleScript_CaltropsActivates[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

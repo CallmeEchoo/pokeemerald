@@ -2699,4 +2699,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Uses coal for power"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_CALTROPS] =
+    {
+        .name = _("Caltrops"),
+        .description = COMPOUND_STRING("Drops caltrops on hit"),
+        .aiRating = 0, // TODO
+    },
+
 };

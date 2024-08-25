@@ -10147,3 +10147,17 @@ BattleScript_MaxwellsFlawActivates::
 	printstring STRINGID_MAXWELLSFLAWACTIVATES
 	waitmessage B_WAIT_TIME_LONG
 	end3
+
+BattleScript_CaltropsActivates::
+	call BattleScript_AbilityPopUp
+	pause B_WAIT_TIME_SHORT
+	trysetspikes BattleScript_CaltropsRet
+	playmoveanimation BS_TARGET, MOVE_SPIKES
+	waitanimation
+	printstring STRINGID_SPIKESSCATTERED
+	waitmessage B_WAIT_TIME_LONG
+BattleScript_CaltropsRet:
+	copybyte sBATTLER, gBattlerTarget
+	copybyte gBattlerTarget, gBattlerAttacker
+	copybyte gBattlerAttacker, sBATTLER
+	return
