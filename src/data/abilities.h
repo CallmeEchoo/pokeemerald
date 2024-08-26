@@ -2734,4 +2734,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Sure to freeze in rain"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_ENDLESS_RAGE] =
+    {
+        .name = _("Endless Rage"),
+        .description = COMPOUND_STRING("I am always angry"),
+        .aiRating = 0, // TODO
+    },
 };

@@ -3460,7 +3460,7 @@ void SetMoveEffect(bool32 primary, bool32 certain)
                 break;
             case MOVE_EFFECT_THRASH:
                 // Petal Dance doesn't lock mons that copy the move with Dancer
-                if (gSpecialStatuses[gEffectBattler].dancerUsedMove)
+                if (gSpecialStatuses[gEffectBattler].dancerUsedMove || GetBattlerAbility(gEffectBattler) == ABILITY_ENDLESS_RAGE)
                 {
                     gBattlescriptCurrInstr++;
                 }
