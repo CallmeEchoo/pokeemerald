@@ -528,7 +528,8 @@ struct MoveInfo
 
     // custom ability flags
     u32 chargeMove:1;
-    u32 padding:4; // end of word
+    u32 kickMove:1;
+    u32 padding:3; // end of word
 
     u32 argument;
 

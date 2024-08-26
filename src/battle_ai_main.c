@@ -1939,8 +1939,10 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 ADJUST_SCORE(-8); //No point in healing, but should at least do it if nothing better
             break;
         case EFFECT_RECOIL_IF_MISS:
-            if (aiData->abilities[battlerAtk] != ABILITY_MAGIC_GUARD && AI_DATA->moveAccuracy[battlerAtk][battlerDef][AI_THINKING_STRUCT->movesetIndex] < 75
-            && !(AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_RISKY))
+            if (aiData->abilities[battlerAtk] != ABILITY_MAGIC_GUARD
+             && aiData->abilities[battlerAtk] != ABILITY_COILED_LEGS
+             && aiData->moveAccuracy[battlerAtk][battlerDef][AI_THINKING_STRUCT->movesetIndex] < 75
+             && !(AI_THINKING_STRUCT->aiFlags[battlerAtk] & AI_FLAG_RISKY))
                 ADJUST_SCORE(-6);
             break;
         case EFFECT_TRANSFORM:

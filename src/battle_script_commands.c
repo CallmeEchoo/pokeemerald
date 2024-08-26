@@ -11282,6 +11282,9 @@ static void Cmd_manipulatedamage(void)
         if (B_RECOIL_IF_MISS_DMG >= GEN_5)
         {
             gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 2;
+
+            if (GetBattlerAbility(gBattlerAttacker) == ABILITY_COILED_LEGS)
+                gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 8;
         }
         else if (B_RECOIL_IF_MISS_DMG == GEN_4)
         {
@@ -11314,6 +11317,9 @@ static void Cmd_manipulatedamage(void)
         break;
     case DMG_RECOIL_FROM_IMMUNE:
         gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerTarget) / 2;
+
+        if (GetBattlerAbility(gBattlerAttacker) == ABILITY_COILED_LEGS)
+            gBattleMoveDamage = GetNonDynamaxMaxHP(gBattlerAttacker) / 8;
         break;
     }
 

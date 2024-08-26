@@ -2741,4 +2741,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("I am always angry"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_COILED_LEGS] =
+    {
+        .name = _("Coiled Legs"),
+        .description = COMPOUND_STRING("Takes less recoil from kicks"),
+        .aiRating = 0, // TODO
+    },
 };

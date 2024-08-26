@@ -726,6 +726,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_DOUBLE_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_MEGA_KICK] =
@@ -748,6 +749,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_FOCUS_ENERGY, COMBO_STARTER_MIND_READER},
         .battleAnimScript = Move_MEGA_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_JUMP_KICK] =
@@ -777,6 +779,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_MIND_READER},
         .battleAnimScript = Move_JUMP_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_ROLLING_KICK] =
@@ -804,6 +807,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_ROLLING_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_SAND_ATTACK] =
@@ -1793,6 +1797,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_LOW_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_COUNTER] =
@@ -3505,6 +3510,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_MIND_READER},
         .battleAnimScript = Move_HIGH_JUMP_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_GLARE] =
@@ -4294,6 +4300,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_FOCUS_ENERGY},
         .battleAnimScript = Move_TRIPLE_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_THIEF] =
@@ -7595,6 +7602,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {COMBO_STARTER_SUNNY_DAY},
         .battleAnimScript = Move_BLAZE_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_MUD_SPORT] =
@@ -16215,6 +16223,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_TROP_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_INSTRUCT] =
@@ -18636,6 +18645,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .contestComboStarterId = 0,
         .contestComboMoves = {0},
         .battleAnimScript = Move_THUNDEROUS_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_GLACIAL_LANCE] =
@@ -19289,6 +19299,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
             .chance = 30,
         }),
         .battleAnimScript = Move_AXE_KICK,
+        .kickMove = TRUE,
     },
 
     [MOVE_LAST_RESPECTS] =
