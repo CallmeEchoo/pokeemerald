@@ -2727,4 +2727,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Ghost moves may freeze"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_FLASH_FREEZE] =
+    {
+        .name = _("Flash Freeze"),
+        .description = COMPOUND_STRING("Sure to freeze in rain"),
+        .aiRating = 0, // TODO
+    },
 };

@@ -11721,6 +11721,13 @@ u32 CalcSecondaryEffectChance(u32 battler, u32 battlerAbility, const struct Addi
     bool8 hasRainbow = (gSideStatuses[GetBattlerSide(battler)] & SIDE_STATUS_RAINBOW) != 0;
     u16 secondaryEffectChance = additionalEffect->chance;
 
+
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "here, %d, %d, %d, %d", battlerAbility, additionalEffect->moveEffect, MOVE_EFFECT_FREEZE_OR_FROSTBITE, gBattleWeather);
+    if (battlerAbility == ABILITY_FLASH_FREEZE
+     && additionalEffect->moveEffect == MOVE_EFFECT_FREEZE_OR_FROSTBITE
+     && gBattleWeather & B_WEATHER_RAIN)
+        return 101;     // certain
+    
     if (hasRainbow && hasSereneGrace && additionalEffect->moveEffect == MOVE_EFFECT_FLINCH)
         return secondaryEffectChance * 2;
 

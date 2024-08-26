@@ -10172,3 +10172,7 @@ BattleScript_ResonantBodyActivates::
 BattleScript_SelectingNotAllowedMoveBrute::
 	printselectionstring STRINGID_BRUTEDOESNTALLOW
 	endselectionscript
+
+BattleScript_FlashFreezeActivates::
+	call BattleScript_AbilityPopUp
+	return
