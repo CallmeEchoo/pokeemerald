@@ -402,7 +402,7 @@ void HandleAction_UseMove(void)
         gSpecialStatuses[i].emergencyExited = FALSE;
     }
 
-    gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT;
+    gCurrentActionFuncId = B_ACTION_MOVE_START_EFFECTS;
 }
 
 void HandleAction_Switch(void)
@@ -774,6 +774,13 @@ void HandleAction_ActionFinished(void)
             }
         }
     }
+}
+
+void HandleAction_MoveStartEffects(void)
+{
+    AbilityBattleEffects(ABILITYEFFECT_MOVE_START, gBattlerAttacker, 0, 0, 0);
+
+    gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT;
 }
 
 static const u8 sHoldEffectToType[][2] =
@@ -6506,6 +6513,14 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 }
                 break;
             }
+        }
+        break;
+    case ABILITYEFFECT_MOVE_START:
+        gLastUsedAbility = GetBattlerAbility(battler);
+        switch (gLastUsedAbility)
+        {
+            default:
+                break;
         }
         break;
     }

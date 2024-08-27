@@ -398,6 +398,7 @@ static void (* const sTurnActionsFuncsTable[])(void) =
     [B_ACTION_FINISHED]               = HandleAction_ActionFinished,
     [B_ACTION_NOTHING_FAINTED]        = HandleAction_NothingIsFainted,
     [B_ACTION_THROW_BALL]             = HandleAction_ThrowBall,
+    [B_ACTION_MOVE_START_EFFECTS]     = HandleAction_MoveStartEffects,
 };
 
 static void (* const sEndTurnFuncsTable[])(void) =
@@ -4816,9 +4817,9 @@ u32 GetBattlerTotalSpeedStat(u32 battler)
     return GetBattlerTotalSpeedStatArgs(battler, ability, holdEffect);
 }
 
-s8 GetChosenMovePriority(u32 battler)
+u32 GetChosenMove(u32 battler)
 {
-    u16 move;
+    u32 move;
 
     gProtectStructs[battler].pranksterElevated = 0;
     if (gProtectStructs[battler].noValidMoves)
@@ -4826,7 +4827,12 @@ s8 GetChosenMovePriority(u32 battler)
     else
         move = gBattleMons[battler].moves[*(gBattleStruct->chosenMovePositions + battler)];
 
-    return GetMovePriority(battler, move);
+    return move;
+}
+
+s8 GetChosenMovePriority(u32 battler)
+{
+    return GetMovePriority(battler, GetChosenMove(battler));
 }
 
 s8 GetMovePriority(u32 battler, u16 move)
