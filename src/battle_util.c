@@ -6135,7 +6135,6 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
              && gMovesInfo[move].bitingMove
              && !(gBattleMons[gBattlerTarget].status2 & STATUS2_WRAPPED))
             {
-                DebugPrintfLevel(MGBA_LOG_DEBUG, "here");
                 gBattleMons[gBattlerTarget].status2 |= STATUS2_WRAPPED;
                 if (GetBattlerHoldEffect(gBattlerAttacker, TRUE) == HOLD_EFFECT_GRIP_CLAW)
                     gDisableStructs[gBattlerTarget].wrapTurns = B_BINDING_TURNS >= GEN_5 ? 7 : 5;
@@ -11738,8 +11737,6 @@ u32 CalcSecondaryEffectChance(u32 battler, u32 battlerAbility, const struct Addi
     bool8 hasRainbow = (gSideStatuses[GetBattlerSide(battler)] & SIDE_STATUS_RAINBOW) != 0;
     u16 secondaryEffectChance = additionalEffect->chance;
 
-
-    DebugPrintfLevel(MGBA_LOG_DEBUG, "here, %d, %d, %d, %d", battlerAbility, additionalEffect->moveEffect, MOVE_EFFECT_FREEZE_OR_FROSTBITE, gBattleWeather);
     if (battlerAbility == ABILITY_FLASH_FREEZE
      && additionalEffect->moveEffect == MOVE_EFFECT_FREEZE_OR_FROSTBITE
      && gBattleWeather & B_WEATHER_RAIN)
