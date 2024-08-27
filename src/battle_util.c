@@ -9979,7 +9979,11 @@ static inline u32 CalcDefenseStat(u32 move, u32 battlerAtk, u32 battlerDef, u32 
         break;
     case ABILITY_BRUTE:
         if (usesDefStat)
+        {
             modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
+            if (updateFlags)
+                RecordAbilityBattle(battlerDef, ABILITY_BRUTE);
+        }
         break;
     }
 
