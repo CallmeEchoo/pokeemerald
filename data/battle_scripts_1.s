@@ -8866,7 +8866,12 @@ BattleScript_GemActivates::
 	setlastuseditem BS_ATTACKER
 	printstring STRINGID_GEMACTIVATES
 	waitmessage B_WAIT_TIME_LONG
+	jumpifability BS_ATTACKER, ABILITY_HOARDER, BattleScript_HoarderActivates
 	removeitem BS_ATTACKER
+	goto BattleScript_GemActivatesRet
+BattleScript_HoarderActivates:
+	call BattleScript_AbilityPopUp
+BattleScript_GemActivatesRet:
 	return
 
 BattleScript_BerryReduceDmg::

@@ -2769,4 +2769,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Gets more power from gems"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_HOARDER] =
+    {
+        .name = _("Hoarder"),
+        .description = COMPOUND_STRING("Does not use up gems"),
+        .aiRating = 0,
+    },
 };
