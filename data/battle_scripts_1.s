@@ -10176,3 +10176,68 @@ BattleScript_SelectingNotAllowedMoveBrute::
 BattleScript_FlashFreezeActivates::
 	call BattleScript_AbilityPopUp
 	return
+
+BattleScript_SoothingScentActivates::
+	savetarget
+.if B_ABILITY_POP_UP == TRUE
+	showabilitypopup BS_ATTACKER
+	pause B_WAIT_TIME_LONG
+	destroyabilitypopup
+.endif
+	setbyte gBattlerTarget, 0
+BattleScript_SoothingScentLoop:
+	jumpifbyteequal gBattlerTarget, gBattlerAttacker, BattleScript_SoothingScentLoopIncrement
+	jumpiftargetally BattleScript_SoothingScentLoopIncrement
+	jumpifabsent BS_TARGET, BattleScript_SoothingScentLoopIncrement
+	jumpifstatus2 BS_TARGET, STATUS2_SUBSTITUTE, BattleScript_SoothingScentLoopIncrement
+.if B_UPDATED_INTIMIDATE >= GEN_8 @These abilties specifically prevent just intimidate, without blocking stat decreases
+	jumpifability BS_TARGET, ABILITY_OWN_TEMPO, BattleScript_SoothingScentPrevented
+	jumpifability BS_TARGET, ABILITY_OBLIVIOUS, BattleScript_SoothingScentPrevented
+.endif
+BattleScript_SoothingScentEffect:
+	copybyte sBATTLER, gBattlerAttacker
+	setstatchanger STAT_SPATK, 1, TRUE
+	statbuffchange STAT_CHANGE_NOT_PROTECT_AFFECTED | STAT_CHANGE_ALLOW_PTR, BattleScript_SoothingScentLoopIncrement
+	setgraphicalstatchangevalues
+	jumpifability BS_TARGET, ABILITY_CONTRARY, BattleScript_SoothingScentContrary
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_DECREASE, BattleScript_SoothingScentWontDecrease
+	playanimation BS_TARGET, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+	printstring STRINGID_PKMNCUTSSPATKWITH
+BattleScript_SoothingScentEffect_WaitString:
+	waitmessage B_WAIT_TIME_LONG
+	copybyte sBATTLER, gBattlerTarget
+BattleScript_SoothingScentLoopIncrement:
+	addbyte gBattlerTarget, 1
+	jumpifbytenotequal gBattlerTarget, gBattlersCount, BattleScript_SoothingScentLoop
+	copybyte sBATTLER, gBattlerAttacker
+	destroyabilitypopup
+	restoretarget
+	pause B_WAIT_TIME_MED
+	end3
+
+BattleScript_SoothingScentPrevented:
+	copybyte sBATTLER, gBattlerTarget
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_PKMNPREVENTSSTATLOSSWITH
+	goto BattleScript_SoothingScentEffect_WaitString
+
+BattleScript_SoothingScentWontDecrease:
+	printstring STRINGID_STATSWONTDECREASE
+	goto BattleScript_SoothingScentEffect_WaitString
+
+BattleScript_SoothingScentContrary:
+	call BattleScript_AbilityPopUpTarget
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_INCREASE, BattleScript_SoothingScentContrary_WontIncrease
+	playanimation BS_TARGET, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+	printfromtable gStatUpStringIds
+	goto BattleScript_SoothingScentEffect_WaitString
+BattleScript_SoothingScentContrary_WontIncrease:
+	printstring STRINGID_TARGETSTATWONTGOHIGHER
+	goto BattleScript_SoothingScentEffect_WaitString
+
+BattleScript_SoothingScentInReverse:
+	copybyte sBATTLER, gBattlerTarget
+	call BattleScript_AbilityPopUpTarget
+	pause B_WAIT_TIME_SHORT
+	modifybattlerstatstage BS_TARGET, STAT_ATK, INCREASE, 1, BattleScript_SoothingScentLoopIncrement, ANIM_ON
+	goto BattleScript_SoothingScentLoopIncrement

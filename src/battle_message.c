@@ -463,6 +463,7 @@ static const u8 sText_PkmnHealsWithCurse[] = _("{B_ATK_NAME_WITH_PREFIX} draws e
 static const u8 sText_TrappedByBiteDown[] = _("{B_ATK_NAME_WITH_PREFIX} trapped {B_DEF_NAME_WITH_PREFIX}\nwith its strong jaw!");
 static const u8 sText_MaxwellsFlawActivates[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} weird field\nlets all {PKMN} float");
 static const u8 sText_BruteDoesntAllow[] = _("{B_ATK_ABILITY}'s effects prevent\nstatus moves from being used!\p");
+static const u8 sText_PkmnCutsSpAtkWith[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_SCR_ACTIVE_ABILITY}\nlowers {B_DEF_NAME_WITH_PREFIX}'s Sp. Atk!");
 
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
@@ -1570,6 +1571,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_TRAPPEDBYBITEDOWN - BATTLESTRINGS_TABLE_START] = sText_TrappedByBiteDown,
     [STRINGID_MAXWELLSFLAWACTIVATES - BATTLESTRINGS_TABLE_START] = sText_MaxwellsFlawActivates,
     [STRINGID_BRUTEDOESNTALLOW - BATTLESTRINGS_TABLE_START] = sText_BruteDoesntAllow,
+    [STRINGID_PKMNCUTSSPATKWITH - BATTLESTRINGS_TABLE_START] = sText_PkmnCutsSpAtkWith,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

@@ -2748,4 +2748,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Takes less recoil from kicks"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_SOOTHING_SCENT] =
+    {
+        .name = _("Soothing Scent"),
+        .description = COMPOUND_STRING("Lowers the foe's Sp. Atk"),
+        .aiRating = 0, // TODO
+    },
 };
