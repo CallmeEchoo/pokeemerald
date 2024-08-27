@@ -2755,4 +2755,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Lowers the foe's Sp. Atk"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_POLLUTION] =
+    {
+        .name = _("Pollution"),
+        .description = COMPOUND_STRING("Very effective vs. nature"),
+        .aiRating = 0, // TODO
+    },
 };
