@@ -2762,4 +2762,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Very effective vs. nature"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_GEM_EATER] =
+    {
+        .name = _("Gem Eater"),
+        .description = COMPOUND_STRING("Gets more power from gems"),
+        .aiRating = 0, // TODO
+    },
 };

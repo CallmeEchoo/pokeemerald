@@ -2087,7 +2087,15 @@ END:
         && gCurrentMove != MOVE_STRUGGLE)
     {
         BattleScriptPushCursor();
-        gBattlescriptCurrInstr = BattleScript_GemActivates;
+        if (GetBattlerAbility(gBattlerAttacker) == ABILITY_GEM_EATER)
+        {
+            gBattlescriptCurrInstr = BattleScript_GemEaterActivates;
+            gBattleScripting.battler = gBattlerAttacker;
+        }
+        else
+        {
+            gBattlescriptCurrInstr = BattleScript_GemActivates;
+        }
         gLastUsedItem = gBattleMons[gBattlerAttacker].item;
     }
 

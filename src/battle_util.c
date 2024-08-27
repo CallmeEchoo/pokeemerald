@@ -9339,6 +9339,7 @@ static inline u32 CalcMoveBasePowerAfterModifiers(u32 move, u32 battlerAtk, u32 
         break;
     }
 
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "%d", sPercentToModifier[gSpecialStatuses[battlerAtk].gemParam]);
     // various effects
     if (gProtectStructs[battlerAtk].helpingHand)
         modifier = uq4_12_multiply(modifier, UQ_4_12(1.5));

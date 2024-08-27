@@ -464,6 +464,7 @@ static const u8 sText_TrappedByBiteDown[] = _("{B_ATK_NAME_WITH_PREFIX} trapped 
 static const u8 sText_MaxwellsFlawActivates[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} weird field\nlets all {PKMN} float");
 static const u8 sText_BruteDoesntAllow[] = _("{B_ATK_ABILITY}'s effects prevent\nstatus moves from being used!\p");
 static const u8 sText_PkmnCutsSpAtkWith[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_SCR_ACTIVE_ABILITY}\nlowers {B_DEF_NAME_WITH_PREFIX}'s Sp. Atk!");
+static const u8 sText_GemEaterBoostsPower[] = _("{B_ATK_NAME_WITH_PREFIX}'s {B_ATK_ABILITY} boosts\nthe power of the gem");
 
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
@@ -1572,6 +1573,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_MAXWELLSFLAWACTIVATES - BATTLESTRINGS_TABLE_START] = sText_MaxwellsFlawActivates,
     [STRINGID_BRUTEDOESNTALLOW - BATTLESTRINGS_TABLE_START] = sText_BruteDoesntAllow,
     [STRINGID_PKMNCUTSSPATKWITH - BATTLESTRINGS_TABLE_START] = sText_PkmnCutsSpAtkWith,
+    [STRINGID_GEMEATERBOOSTSPOWER - BATTLESTRINGS_TABLE_START] = sText_GemEaterBoostsPower,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

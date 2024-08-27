@@ -5960,6 +5960,9 @@ void SetTypeBeforeUsingMove(u32 move, u32 battlerAtk)
     {
         gSpecialStatuses[battlerAtk].gemParam = GetBattlerHoldEffectParam(battlerAtk);
         gSpecialStatuses[battlerAtk].gemBoost = TRUE;
+
+        if (GetBattlerAbility(battlerAtk) == ABILITY_GEM_EATER)
+            gSpecialStatuses[battlerAtk].gemParam *= 2;
     }
 }
 

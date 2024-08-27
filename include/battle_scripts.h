@@ -857,5 +857,6 @@ extern const u8 BattleScript_ResonantBodyActivates[];
 extern const u8 BattleScript_SelectingNotAllowedMoveBrute[];
 extern const u8 BattleScript_FlashFreezeActivates[];
 extern const u8 BattleScript_SoothingScentActivates[];
+extern const u8 BattleScript_GemEaterActivates[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

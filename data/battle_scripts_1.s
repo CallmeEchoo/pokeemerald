@@ -10241,3 +10241,8 @@ BattleScript_SoothingScentInReverse:
 	pause B_WAIT_TIME_SHORT
 	modifybattlerstatstage BS_TARGET, STAT_ATK, INCREASE, 1, BattleScript_SoothingScentLoopIncrement, ANIM_ON
 	goto BattleScript_SoothingScentLoopIncrement
+
+BattleScript_GemEaterActivates::
+	call BattleScript_AbilityPopUpScripting
+	printstring STRINGID_GEMEATERBOOSTSPOWER
+	goto BattleScript_GemActivates
