@@ -2524,3 +2524,9 @@
 	callnative BS_SetSoundCharge
 	.byte \battler
 	.endm
+
+	@ saves first battler with ability to scripting battler.
+	.macro getabilityonfield ability:req
+	callnative BS_GetAbilityOnField
+	.4byte \ability
+	.endm

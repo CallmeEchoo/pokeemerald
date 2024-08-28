@@ -1389,6 +1389,7 @@ BattleScript_AromaticMistAnim:
 	printfromtable gStatUpStringIds
 	waitmessage B_WAIT_TIME_LONG
 BattleScript_EffectAromaticMistEnd:
+	setadditionaleffects
 	goto BattleScript_MoveEnd
 
 BattleScript_EffectMagneticFlux::
@@ -4148,6 +4149,7 @@ BattleScript_CheckHealBellMon2Unaffected::
 BattleScript_PartyHealEnd::
 	updatestatusicon BS_ATTACKER_WITH_PARTNER
 	waitstate
+	setadditionaleffects
 	goto BattleScript_MoveEnd
 
 BattleScript_EffectMeanLook::
@@ -10251,3 +10253,16 @@ BattleScript_GemEaterActivates::
 	call BattleScript_AbilityPopUpScripting
 	printstring STRINGID_GEMEATERBOOSTSPOWER
 	goto BattleScript_GemActivates
+
+BattleScript_MoveUsedFoulOdor::
+	getabilityonfield ABILITY_FOUL_ODOR
+	call BattleScript_AbilityPopUpScripting
+	printstring STRINGID_PKMNFLINCHEDFOULODOR
+	waitmessage B_WAIT_TIME_LONG
+	jumpifability BS_ATTACKER ABILITY_STEADFAST BattleScript_TryActivateSteadFast
+	goto BattleScript_MoveUsedFlinchedEnd
+
+BattleScript_AromaNeutralizedFoulOdor::
+	printstring STRINGID_AROMANEUTRALIZESFOULODOR
+	waitmessage B_WAIT_TIME_MED
+	return

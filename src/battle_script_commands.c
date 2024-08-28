@@ -3806,6 +3806,18 @@ void SetMoveEffect(bool32 primary, bool32 certain)
                     gBattlescriptCurrInstr = BattleScript_LowerAtkSpAtk;
                 }
                 break;
+            case MOVE_EFFECT_AROMA:
+                if (!(gFieldStatuses & STATUS_FIELD_AROMA))
+                {
+                    gFieldStatuses |= STATUS_FIELD_AROMA_TURN(5);
+
+                    if (IsAbilityOnField(ABILITY_FOUL_ODOR))
+                    {
+                        BattleScriptPush(gBattlescriptCurrInstr + 1);
+                        gBattlescriptCurrInstr = BattleScript_AromaNeutralizedFoulOdor;
+                    }
+                }
+                break;
             }
         }
     }
@@ -17187,5 +17199,23 @@ void BS_SetSoundCharge(void)
     u8 battler = GetBattlerForBattleScript(cmd->battler);
     gStatuses4[battler] |= STATUS4_SOUND_CHARGED;
     gDisableStructs[battler].soundCharged = 2;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_GetAbilityOnField(void)
+{
+    NATIVE_ARGS(u32 ability);
+
+    u32 i;
+
+    for (i = 0; i < gBattlersCount; i++)
+    {
+        if (IsBattlerAlive(i) && GetBattlerAbility(i) == cmd->ability)
+        {
+            gBattleScripting.battler = i;
+            break;
+        }
+    }
+
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

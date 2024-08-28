@@ -1111,7 +1111,8 @@ bool32 WasUnableToUseMove(u32 battler)
         || gProtectStructs[battler].flinchImmobility
         || gProtectStructs[battler].confusionSelfDmg
         || gProtectStructs[battler].powderSelfDmg
-        || gProtectStructs[battler].usedThroatChopPreventedMove)
+        || gProtectStructs[battler].usedThroatChopPreventedMove
+        || gProtectStructs[battler].foulOdorImmobility)
         return TRUE;
     else
         return FALSE;
@@ -1695,6 +1696,7 @@ enum
     ENDTURN_RAINBOW,
     ENDTURN_SEA_OF_FIRE,
     ENDTURN_SWAMP,
+    ENDTURN_AROMA_COUNTER,
     ENDTURN_FIELD_COUNT,
 };
 
@@ -2305,6 +2307,11 @@ u8 DoFieldEndTurnEffects(void)
                 gBattleStruct->turnCountersTracker++;
                 gBattleStruct->turnSideTracker = 0;
             }
+            break;
+        case ENDTURN_AROMA_COUNTER:
+            if (gFieldStatuses & STATUS_FIELD_AROMA)
+                gFieldStatuses -= STATUS_FIELD_AROMA_TURN(1);
+            gBattleStruct->turnCountersTracker++;
             break;
         case ENDTURN_FIELD_COUNT:
             effect++;
@@ -3715,6 +3722,21 @@ u8 AtkCanceller_UnableToUseMove(u32 moveType)
             else
             {
                 gMultiHitCounter = 0;
+            }
+            gBattleStruct->atkCancellerTracker++;
+            break;
+        case CANCELLER_FOUL_ODOR:
+            if (IsAbilityOnField(ABILITY_FOUL_ODOR) 
+             && GetBattlerAbility(gBattlerAttacker) != ABILITY_FOUL_ODOR
+             && !(IS_BATTLER_OF_TYPE(gBattlerAttacker, TYPE_POISON))
+             && !(gFieldStatuses & STATUS_FIELD_AROMA)
+             && RandomPercentage(RNG_STENCH, 20))
+            {
+                gProtectStructs[gBattlerAttacker].foulOdorImmobility = TRUE;
+                CancelMultiTurnMoves(gBattlerAttacker);
+                gBattlescriptCurrInstr = BattleScript_MoveUsedFoulOdor;
+                gHitMarker |= HITMARKER_UNABLE_TO_USE_MOVE;
+                effect = 1;
             }
             gBattleStruct->atkCancellerTracker++;
             break;
@@ -9339,7 +9361,6 @@ static inline u32 CalcMoveBasePowerAfterModifiers(u32 move, u32 battlerAtk, u32 
         break;
     }
 
-    DebugPrintfLevel(MGBA_LOG_DEBUG, "%d", sPercentToModifier[gSpecialStatuses[battlerAtk].gemParam]);
     // various effects
     if (gProtectStructs[battlerAtk].helpingHand)
         modifier = uq4_12_multiply(modifier, UQ_4_12(1.5));

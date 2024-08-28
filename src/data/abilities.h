@@ -2776,4 +2776,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Does not use up gems"),
         .aiRating = 0,
     },
+
+    [ABILITY_FOUL_ODOR] =
+    {
+        .name = _("Foul Odor"),
+        .description = COMPOUND_STRING("Stinks up the competition"),
+        .aiRating = 0, // TODO
+    },
 };

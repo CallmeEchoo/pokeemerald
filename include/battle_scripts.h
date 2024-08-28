@@ -858,5 +858,7 @@ extern const u8 BattleScript_SelectingNotAllowedMoveBrute[];
 extern const u8 BattleScript_FlashFreezeActivates[];
 extern const u8 BattleScript_SoothingScentActivates[];
 extern const u8 BattleScript_GemEaterActivates[];
+extern const u8 BattleScript_MoveUsedFoulOdor[];
+extern const u8 BattleScript_AromaNeutralizedFoulOdor[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H
