@@ -408,6 +408,7 @@
 
 #define NUM_MOVE_EFFECTS                81
 
+#define MOVE_EFFECT_AFFECTS_SCRIPT      0x1000
 #define MOVE_EFFECT_AFFECTS_USER        0x2000
 #define MOVE_EFFECT_CERTAIN             0x4000
 #define MOVE_EFFECT_CONTINUE            0x8000

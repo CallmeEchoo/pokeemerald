@@ -467,6 +467,7 @@ static const u8 sText_PkmnCutsSpAtkWith[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s
 static const u8 sText_GemEaterBoostsPower[] = _("{B_ATK_NAME_WITH_PREFIX}'s {B_ATK_ABILITY} boosts\nthe power of the gem");
 static const u8 sText_PkmnFlinchedFouldOdor[] = _("{B_ATK_NAME_WITH_PREFIX} flinched from\n{B_SCR_ACTIVE_NAME_WITH_PREFIX} terrible smell");
 static const u8 sText_AromaNeutralizesFoulOdor[] = _("The pleasant aroma neutralizes\nthe foul stench");
+static const u8 sText_PkmnSeesPowerfulFoe[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} recognizes a powerful\nfoe and prepares for battle");
 
 const u8 *const gStatNamesTable[NUM_BATTLE_STATS] =
 {
@@ -1578,6 +1579,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_GEMEATERBOOSTSPOWER - BATTLESTRINGS_TABLE_START] = sText_GemEaterBoostsPower,
     [STRINGID_PKMNFLINCHEDFOULODOR - BATTLESTRINGS_TABLE_START] = sText_PkmnFlinchedFouldOdor,
     [STRINGID_AROMANEUTRALIZESFOULODOR - BATTLESTRINGS_TABLE_START] = sText_AromaNeutralizesFoulOdor,
+    [STRINGID_PKMNSEESPOWERFULFOE - BATTLESTRINGS_TABLE_START] = sText_PkmnSeesPowerfulFoe,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

@@ -2783,4 +2783,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Stinks up the competition"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_PRIDEFUL] =
+    {
+        .name = _("Prideful"),
+        .description = COMPOUND_STRING("Powers up vs. strong foes"),
+        .aiRating = 0, // TODO
+    },
 };

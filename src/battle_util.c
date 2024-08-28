@@ -62,6 +62,7 @@ static u32 GetFlingPowerFromItemId(u32 itemId);
 static void SetRandomMultiHitCounter();
 static u32 GetBattlerItemHoldEffectParam(u32 battler, u32 item);
 static bool32 CanBeInfinitelyConfused(u32 battler);
+static bool32 IsValidPridefulLevel(u8 battler);
 
 extern const u8 *const gBattlescriptsForRunningByItem[];
 extern const u8 *const gBattlescriptsForUsingItem[];
@@ -5036,6 +5037,15 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 effect++;
             }
             break;
+        case ABILITY_PRIDEFUL:
+            if (!gSpecialStatuses[battler].switchInAbilityDone
+             && IsValidPridefulLevel(battler))
+            {
+                gSpecialStatuses[battler].switchInAbilityDone = TRUE;
+                gBattleScripting.battler = battler;
+                BattleScriptPushCursorAndCallback(BattleScript_PridefulActivates);
+                effect++;
+            }
         }
         break;
     case ABILITYEFFECT_ENDTURN:
@@ -12043,4 +12053,18 @@ u32 GetMoveType(u32 move)
     if (gMain.inBattle && gBattleStruct->dynamicMoveType)
         return gBattleStruct->dynamicMoveType & DYNAMIC_TYPE_MASK;
     return gMovesInfo[move].type;
+}
+
+static bool32 IsValidPridefulLevel(u8 battler)
+{
+    u32 maxOpponentLevel;
+    u32 maxPridefulLevel;
+
+    if (IsDoubleBattle())
+        maxOpponentLevel = max(gBattleMons[BATTLE_OPPOSITE(battler)].level, gBattleMons[BATTLE_PARTNER(BATTLE_OPPOSITE(battler))].level);
+    else
+        maxOpponentLevel = gBattleMons[BATTLE_OPPOSITE(battler)].level;
+
+    maxPridefulLevel = maxOpponentLevel - (maxOpponentLevel / 10); // rounded down
+    return gBattleMons[battler].level <= maxPridefulLevel;
 }

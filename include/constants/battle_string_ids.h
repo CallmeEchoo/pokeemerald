@@ -724,8 +724,9 @@
 #define STRINGID_GEMEATERBOOSTSPOWER                  722
 #define STRINGID_PKMNFLINCHEDFOULODOR                 723
 #define STRINGID_AROMANEUTRALIZESFOULODOR             724
+#define STRINGID_PKMNSEESPOWERFULFOE                  725
 
-#define BATTLESTRINGS_COUNT                           725
+#define BATTLESTRINGS_COUNT                           726
 
 // This is the string id that gBattleStringsTable starts with.
 // String ids before this (e.g. STRINGID_INTROMSG) are not in the table,

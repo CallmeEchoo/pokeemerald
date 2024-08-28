@@ -860,5 +860,6 @@ extern const u8 BattleScript_SoothingScentActivates[];
 extern const u8 BattleScript_GemEaterActivates[];
 extern const u8 BattleScript_MoveUsedFoulOdor[];
 extern const u8 BattleScript_AromaNeutralizedFoulOdor[];
+extern const u8 BattleScript_PridefulActivates[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

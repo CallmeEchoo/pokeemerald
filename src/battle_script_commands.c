@@ -11625,10 +11625,13 @@ static u32 ChangeStatBuffs(s8 statValue, u32 statId, u32 flags, const u8 *BS_ptr
     bool32 notProtectAffected = FALSE;
     u32 index, battler, battlerAbility, battlerHoldEffect;
     bool32 affectsUser = (flags & MOVE_EFFECT_AFFECTS_USER);
+    bool32 affectsScript = (flags & MOVE_EFFECT_AFFECTS_SCRIPT);
     bool32 mirrorArmored = (flags & STAT_CHANGE_MIRROR_ARMOR);
 
     if (affectsUser)
         battler = gBattlerAttacker;
+    else if (affectsScript)
+        battler = gBattleScripting.battler;
     else
         battler = gBattlerTarget;
 
@@ -11637,7 +11640,7 @@ static u32 ChangeStatBuffs(s8 statValue, u32 statId, u32 flags, const u8 *BS_ptr
 
     gSpecialStatuses[battler].changedStatsBattlerId = gBattlerAttacker;
 
-    flags &= ~(MOVE_EFFECT_AFFECTS_USER | STAT_CHANGE_MIRROR_ARMOR);
+    flags &= ~(MOVE_EFFECT_AFFECTS_SCRIPT | MOVE_EFFECT_AFFECTS_USER | STAT_CHANGE_MIRROR_ARMOR);
 
     if (flags & MOVE_EFFECT_CERTAIN)
         certain = TRUE;

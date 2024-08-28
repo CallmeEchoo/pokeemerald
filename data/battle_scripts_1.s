@@ -10266,3 +10266,29 @@ BattleScript_AromaNeutralizedFoulOdor::
 	printstring STRINGID_AROMANEUTRALIZESFOULODOR
 	waitmessage B_WAIT_TIME_MED
 	return
+
+BattleScript_PridefulActivates::
+	call BattleScript_AbilityPopUpScripting
+	printstring STRINGID_PKMNSEESPOWERFULFOE
+	jumpifstat BS_SCRIPTING, CMP_LESS_THAN, STAT_ATK, MAX_STAT_STAGE, BattleScript_PridefulAktRaise
+	printstring STRINGID_STATSWONTINCREASE2
+	jumpifstat BS_SCRIPTING, CMP_LESS_THAN STAT_SPATK, MAX_STAT_STAGE, BattleScript_PridefulSpAtkRaise
+	printstring STRINGID_STATSWONTINCREASE2
+	end3
+
+BattleScript_PridefulAktRaise:
+	setstatchanger STAT_ATK, 1, FALSE
+	statbuffchange MOVE_EFFECT_AFFECTS_SCRIPT | STAT_CHANGE_ALLOW_PTR, BattleScript_PridefulSpAtkRaise
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_INCREASE, BattleScript_PridefulSpAtkRaise
+	playstatchangeanimation BS_SCRIPTING, BIT_ATK, 0
+	printfromtable gStatUpStringIds
+	waitmessage B_WAIT_TIME_LONG
+BattleScript_PridefulSpAtkRaise:
+	setstatchanger STAT_SPATK, 1, FALSE
+	statbuffchange MOVE_EFFECT_AFFECTS_SCRIPT | STAT_CHANGE_ALLOW_PTR, BattleScript_PridefulRet
+	jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_STAT_WONT_INCREASE, BattleScript_PridefulRet
+	playstatchangeanimation BS_SCRIPTING, BIT_SPATK, 0
+	printfromtable gStatUpStringIds
+	waitmessage B_WAIT_TIME_LONG
+BattleScript_PridefulRet:
+	end3
