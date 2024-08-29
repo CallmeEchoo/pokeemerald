@@ -4784,6 +4784,16 @@ static u32 AI_CalcMoveEffectScore(u32 battlerAtk, u32 battlerDef, u32 move)
         }
     }
 
+    // defenders ability
+    u32 ability = GetBattlerAbility(battlerDef);
+    switch (ability)
+    {
+        case ABILITY_AQUAPHOBE:
+            if (GetActiveGimmick(battlerDef) != GIMMICK_DYNAMAX)
+                ADJUST_SCORE(AI_TryToClearStats(battlerAtk, battlerDef, isDoubleBattle));
+            break;
+    }
+
     return score;
 }
 

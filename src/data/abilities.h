@@ -2801,4 +2801,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeTraced = TRUE,
         .cantBeSuppressed = TRUE,
     },
+
+    [ABILITY_AQUAPHOBE] =
+    {
+        .name = _("Aquaphobe"),
+        .description = COMPOUND_STRING("Resists nature. Hates water."),
+        .aiRating = 0, // TODO
+    },
 };
