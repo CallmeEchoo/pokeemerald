@@ -1512,6 +1512,12 @@ static bool32 AccuracyCalcHelper(u16 move)
         JumpIfMoveFailed(7, move);
         return TRUE;
     }
+    else if (GetBattlerAbility(gBattlerAttacker) == ABILITY_SONIC_EMITTER && gMovesInfo[move].soundMove)
+    {
+        if(!JumpIfMoveFailed(7, move))
+            RecordAbilityBattle(gBattlerAttacker, ABILITY_SONIC_EMITTER);
+        return TRUE;
+    }
 
     if (GetActiveGimmick(gBattlerAttacker) == GIMMICK_Z_MOVE && !(gStatuses3[gBattlerTarget] & STATUS3_SEMI_INVULNERABLE))
     {

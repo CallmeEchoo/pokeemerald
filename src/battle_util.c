@@ -6568,8 +6568,13 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
         gLastUsedAbility = GetBattlerAbility(battler);
         switch (gLastUsedAbility)
         {
-            default:
-                break;
+            case ABILITY_SONIC_EMITTER:
+                if (gMovesInfo[move].soundMove && gMovesInfo[move].accuracy > 0)
+                {
+                    BattleScriptPushCursorAndCallback(BattleScript_AbilityPopUpEnd3);
+                    effect++;
+                }
+            break;
         }
         break;
     }

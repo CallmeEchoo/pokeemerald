@@ -2808,4 +2808,11 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Resists nature. Hates water."),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_SONIC_EMITTER] =
+    {
+        .name = _("Sonic Emitter"),
+        .description = COMPOUND_STRING("Sound moves never miss"),
+        .aiRating = 0, // TODO
+    }
 };
