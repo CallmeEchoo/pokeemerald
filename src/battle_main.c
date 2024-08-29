@@ -2042,6 +2042,9 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 ball = gTrainerClasses[trainer->trainerClass].ball ?: ITEM_POKE_BALL;
                 SetMonData(&party[i], MON_DATA_POKEBALL, &ball);
             }
+
+            if (partyData[i].ev == NULL && partyData[i].ability == ABILITY_ONE_OF_A_KIND)
+                SetOneOfAKindEVs(&party[i]);
         }
     }
 
@@ -3781,6 +3784,21 @@ static void TryDoEventsBeforeFirstTurn(void)
 {
     s32 i, j;
 
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "species: %d", GetMonData(&gEnemyParty[0], MON_DATA_SPECIES));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "hp: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_HP_IV), GetMonData(&gEnemyParty[0], MON_DATA_HP_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "atk: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_ATK_IV), GetMonData(&gEnemyParty[0], MON_DATA_ATK_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "def: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_DEF_IV), GetMonData(&gEnemyParty[0], MON_DATA_DEF_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "speed: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_SPEED_IV), GetMonData(&gEnemyParty[0], MON_DATA_SPEED_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "spatk: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_SPATK_IV), GetMonData(&gEnemyParty[0], MON_DATA_SPATK_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "spdef: %d, %d", GetMonData(&gEnemyParty[0], MON_DATA_SPDEF_IV), GetMonData(&gEnemyParty[0], MON_DATA_SPDEF_EV));
+    
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "species: %d", GetMonData(&gPlayerParty[0], MON_DATA_SPECIES));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "hp: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_HP_IV), GetMonData(&gPlayerParty[0], MON_DATA_HP_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "atk: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_ATK_IV), GetMonData(&gPlayerParty[0], MON_DATA_ATK_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "def: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_DEF_IV), GetMonData(&gPlayerParty[0], MON_DATA_DEF_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "speed: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_SPEED_IV), GetMonData(&gPlayerParty[0], MON_DATA_SPEED_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "spatk: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_SPATK_IV), GetMonData(&gPlayerParty[0], MON_DATA_SPATK_EV));
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "spdef: %d, %d", GetMonData(&gPlayerParty[0], MON_DATA_SPDEF_IV), GetMonData(&gPlayerParty[0], MON_DATA_SPDEF_EV));
     if (gBattleControllerExecFlags)
         return;
 

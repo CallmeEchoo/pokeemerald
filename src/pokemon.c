@@ -1098,6 +1098,10 @@ void CreateMon(struct Pokemon *mon, u16 species, u8 level, u8 fixedIV, u8 hasFix
     SetMonData(mon, MON_DATA_LEVEL, &level);
     mail = MAIL_NONE;
     SetMonData(mon, MON_DATA_MAIL, &mail);
+
+    if (gSpeciesInfo[species].abilities[GetMonData(mon, MON_DATA_ABILITY_NUM)] == ABILITY_ONE_OF_A_KIND)
+        SetOneOfAKindEVs(mon);
+
     CalculateMonStats(mon);
 }
 
@@ -1773,6 +1777,7 @@ void CalculateMonStats(struct Pokemon *mon)
     s32 level = GetLevelFromMonExp(mon);
     s32 newMaxHP;
 
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "hp ev: %d", hpEV);
     u8 nature = GetMonData(mon, MON_DATA_HIDDEN_NATURE, NULL);
 
     SetMonData(mon, MON_DATA_LEVEL, &level);
@@ -7098,4 +7103,22 @@ u32 CheckDynamicMoveType(struct Pokemon *mon, u32 move, u32 battler)
         return TYPE_WATER;
 
     return type;
+}
+
+void SetOneOfAKindEVs(struct Pokemon* mon)
+{
+    u8 i;
+    u32 personality = GetMonData(mon, MON_DATA_PERSONALITY);
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "personality: %u", personality);
+
+    u8 offset = (personality & 0xC0000000) >> 30;
+    DebugPrintfLevel(MGBA_LOG_DEBUG, "offset: %d", offset);
+
+    for (i = 0; i <= NUM_STATS; i++)
+    {
+        u8 ev = (personality & MAX_IV_MASK) * 8 + offset;
+        DebugPrintfLevel(MGBA_LOG_DEBUG, "i: %d", ev);
+        SetMonData(mon, MON_DATA_HP_EV + i, &ev);
+        personality >>= 5;
+    }
 }

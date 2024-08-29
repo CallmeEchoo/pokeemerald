@@ -2790,4 +2790,15 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("Powers up vs. strong foes"),
         .aiRating = 0, // TODO
     },
+
+    [ABILITY_ONE_OF_A_KIND] =
+    {
+        .name = _("One of a Kind"),
+        .description = COMPOUND_STRING("Not like the others"),
+        .aiRating = 0, // TODO
+        .cantBeCopied = TRUE,
+        .cantBeSwapped = TRUE,
+        .cantBeTraced = TRUE,
+        .cantBeSuppressed = TRUE,
+    },
 };
