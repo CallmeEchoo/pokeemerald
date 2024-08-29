@@ -847,6 +847,7 @@ extern const u8 BattleScript_EffectFickleBeam[];
 extern const u8 BattleScript_FickleBeamDoubled[];
 
 // custom abilites
+extern const u8 BattleScript_AbilityPopUpEnd3[];
 extern const u8 BattleScript_DesertDwellerActivates[];
 extern const u8 BattleScript_HoneypotActivates[];
 extern const u8 BattleScript_SupercomputerActivates[];

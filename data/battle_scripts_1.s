@@ -7670,6 +7670,10 @@ BattleScript_AbilityPopUpScripting:
 	sethword sABILITY_OVERWRITE, 0
 	return
 
+BattleScript_AbilityPopUpEnd3::
+	call BattleScript_AbilityPopUp
+	end3
+
 BattleScript_SpeedBoostActivates::
 	statbuffchange MOVE_EFFECT_AFFECTS_USER | STAT_CHANGE_ALLOW_PTR, BattleScript_SpeedBoostActivatesEnd
 	call BattleScript_AbilityPopUp
