@@ -2814,5 +2814,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .name = _("Sonic Emitter"),
         .description = COMPOUND_STRING("Sound moves never miss"),
         .aiRating = 0, // TODO
+    },
+
+    [ABILITY_HELL_FIRE] =
+    {
+        .name = _("Hellfire"),
+        .description = COMPOUND_STRING("Fire moves may toxic foes"),
+        .aiRating = 0, // TODO
     }
 };
