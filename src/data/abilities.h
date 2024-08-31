@@ -2821,5 +2821,12 @@ const struct Ability gAbilitiesInfo[ABILITIES_COUNT] =
         .name = _("Hellfire"),
         .description = COMPOUND_STRING("Fire moves may toxic foes"),
         .aiRating = 0, // TODO
-    }
+    },
+
+    [ABILITY_EERIE_HOWL] =
+    {
+        .name = _("Eerie Howl"),
+        .description = COMPOUND_STRING("Makes sound moves dark"),
+        .aiRating = 0, // TODO
+    },
 };

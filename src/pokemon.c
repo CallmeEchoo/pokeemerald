@@ -7101,6 +7101,8 @@ u32 CheckDynamicMoveType(struct Pokemon *mon, u32 move, u32 battler)
 
     if (ability == ABILITY_LIQUID_VOICE && gMovesInfo[move].soundMove == TRUE)
         return TYPE_WATER;
+    else if (ability == ABILITY_EERIE_HOWL && gMovesInfo[move].soundMove == TRUE)
+        return TYPE_DARK;
 
     return type;
 }
